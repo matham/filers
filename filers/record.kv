@@ -1,0 +1,397 @@
+#:kivy 1.8
+#:import Matrix kivy.graphics.transformation.Matrix
+#:import partial functools.partial
+#:import formats_out ffpyplayer.tools.formats_out
+#:import formats_in ffpyplayer.tools.formats_in
+#:import pix_fmts ffpyplayer.tools.pix_fmts
+#:import codecs_dec ffpyplayer.tools.codecs_dec
+#:import codecs_enc ffpyplayer.tools.codecs_enc
+#:import pretty_space tools.pretty_space
+
+
+<RecordInput@BoxLayout>:
+    _nothing_here: setattr(app, 'rec_wgt', self.parent)
+    orientation: 'vertical'
+    size_hint_y: None
+    height: '80dp'
+    canvas.before:
+        Color:
+            rgba: .2, .1, .0, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: 1, 1, 1, 1
+        BorderImage:
+            border: (16, 16, 16, 16)
+            pos: self.pos
+            size: self.size
+            source: 'media/blue_border.png'
+    BoxLayout:
+        padding: [3, 3, 20, 3]
+        spacing: 5
+        orientaion: 'horizontal'
+        RotatedLabel:
+            size_hint_x: None
+            width: '20dp'
+            angle: 90
+            text: 'Input'
+        BoxLayout:
+            orientation: 'vertical'
+            BoxLayout:
+                spacing: 5
+                orientaion: 'horizontal'
+                Spinner:
+                    size_hint_x: 0.6
+                    id: icam
+                    disabled: play.state == 'down'
+                    on_press:
+                        self.values, iopts.values = app.rec_wgt.get_cam_list(self.text, iopts.text)
+                        iopts.has_changed = True
+                    text: app.rec_wgt.idshow_dev
+                    on_text: iopts.values = app.rec_wgt.set_cam(self.text, iopts.text)
+                Spinner:
+                    has_changed: False
+                    id: iopts
+                    text: app.rec_wgt.idshow_opt
+                    disabled: play.state == 'down'
+                    on_text:
+                        if self.has_changed: app.rec_wgt.set_cam_opts(icam.text, self.text)
+                TextInput:
+                    id: ifilename
+                    disabled: play.state == 'down'
+                    hint_text: 'Input filename'
+                    text: app.rec_wgt.ifilename
+                    on_text: app.rec_wgt.ifilename = self.text
+            BoxLayout:
+                id: iparams
+                padding: [0, 3]
+                spacing: 5
+                orientaion: 'horizontal'
+                Spinner:
+                    id: ifmt
+                    disabled: play.state == 'down'
+                    values: [''] + formats_in
+                    size_hint_x: None
+                    width: '100dp'
+                    text: app.rec_wgt.ifmt
+                    on_text: app.rec_wgt.ifmt = self.text
+                Spinner:
+                    id: icodec
+                    disabled: play.state == 'down'
+                    values: [''] + codecs_dec
+                    size_hint_x: None
+                    width: '120dp'
+                    text: app.rec_wgt.icodec
+                    on_text: app.rec_wgt.icodec = self.text
+                Spinner:
+                    id: ipix_fmt
+                    disabled: play.state == 'down'
+                    values: [''] + pix_fmts
+                    size_hint_x: None
+                    width: '140dp'
+                    text: app.rec_wgt.ipix_fmt
+                    on_text: app.rec_wgt.ipix_fmt = self.text
+                TextInput:
+                    input_filter: 'int'
+                    id: iwidth
+                    disabled: play.state == 'down'
+                    hint_text:  'Width'
+                    size_hint_x: None
+                    width: '80dp'
+                    text: str(app.rec_wgt.iwidth) if app.rec_wgt.iwidth else ''
+                    on_text: app.rec_wgt.iwidth = self.text
+                TextInput:
+                    input_filter: 'int'
+                    id: iheight
+                    disabled: play.state == 'down'
+                    hint_text:  'Height'
+                    size_hint_x: None
+                    width: '80dp'
+                    text: str(app.rec_wgt.iheight) if app.rec_wgt.iheight else ''
+                    on_text: app.rec_wgt.iheight = self.text
+                TextInput:
+                    input_filter: 'float'
+                    id: irate
+                    disabled: play.state == 'down'
+                    hint_text:  'Rate'
+                    size_hint_x: None
+                    width: '80dp'
+                    text: str(app.rec_wgt.irate) if app.rec_wgt.irate else ''
+                    on_text: app.rec_wgt.irate = self.text
+                SLabel:
+                    markup: True
+                    halign: 'left'
+                    text: app.rec_wgt.stats_input_pretty
+        ToggleButton:
+            id: play
+            size_hint_x: None
+            width: self.height
+            background_normal: 'media/play.png'
+            background_down: 'media/pause.png'
+            on_state:
+                if self.state == 'down': self.state = 'down' if app.rec_wgt.play(app.display_color) else 'normal'
+                if self.state == 'normal': app.rec_wgt.stop()
+                if self.state == 'normal': app.rec_wgt.record_btn_wgt.state = 'normal'
+                if self.state == 'normal': app.rec_wgt.frame_count = 0
+            on_parent: app.rec_wgt.play_btn_wgt = self
+
+
+<RecordOutput@BoxLayout>:
+    orientation: 'vertical'
+    size_hint_y: None
+    height: '80dp'
+    canvas.before:
+        Color:
+            rgba: .2, 0, .1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: 1, 1, 1, 1
+        BorderImage:
+            border: (16, 16, 16, 16)
+            pos: self.pos
+            size: self.size
+            source: 'media/blue_border.png'
+    BoxLayout:
+        padding: [3, 3, 20, 3]
+        spacing: 5
+        orientaion: 'horizontal'
+        RotatedLabel:
+            size_hint_x: None
+            width: '20dp'
+            angle: 90
+            text: 'Output'
+        BoxLayout:
+            orientation: 'vertical'
+            BoxLayout:
+                spacing: 5
+                orientaion: 'horizontal'
+                TextInput:
+                    id: odir
+                    hint_text: 'Output directory'
+                    on_text: app.rec_wgt.odir = self.text
+                    disabled: app.rec_wgt.recording
+                    text: app.rec_wgt.odir
+                    on_triple_tap:
+                        app.filebrowser.target = 'dst'
+                        app.filebrowser.dirselect = True
+                        app.filebrowser.open()
+                        app.filebrowser.callback = partial(app.assign_path, self)
+                TextInput:
+                    id: ofilename
+                    hint_text: 'Output filename'
+                    on_text: app.rec_wgt.ofilename = self.text
+                    disabled: app.rec_wgt.recording
+                    text: app.rec_wgt.ofilename
+                TextInput:
+                    input_filter: 'int'
+                    size_hint_x: None
+                    width: '40dp'
+                    id: oincrement
+                    hint_text: 'n'
+                    on_text: app.rec_wgt.oincrement = self.text
+                    disabled: app.rec_wgt.recording
+                    text: str(app.rec_wgt.oincrement) if app.rec_wgt.oincrement else ''
+                TextInput:
+                    id: oext
+                    size_hint_x: None
+                    width: '80dp'
+                    hint_text: 'ext'
+                    on_text: app.rec_wgt.oext = self.text
+                    disabled: app.rec_wgt.recording
+                    text: app.rec_wgt.oext
+            BoxLayout:
+                id: iparams
+                padding: [0, 3]
+                spacing: 5
+                orientaion: 'horizontal'
+                Spinner:
+                    id: ofmt
+                    values: [''] + formats_out
+                    size_hint_x: None
+                    width: '70dp'
+                    on_text: app.rec_wgt.ofmt = self.text
+                    disabled: True
+                    text: app.rec_wgt.ofmt
+                Spinner:
+                    id: ocodec
+                    values: codecs_enc
+                    size_hint_x: None
+                    width: '100dp'
+                    on_text: app.rec_wgt.ocodec = self.text
+                    disabled: True
+                    text: app.rec_wgt.ocodec
+                Spinner:
+                    id: opix_fmt
+                    values: [''] + pix_fmts
+                    size_hint_x: None
+                    width: '140dp'
+                    on_text: app.rec_wgt.opix_fmt = self.text
+                    disabled: app.rec_wgt.recording
+                    text: app.rec_wgt.opix_fmt
+                TextInput:
+                    input_filter: 'int'
+                    id: owidth
+                    hint_text:  'Width'
+                    size_hint_x: None
+                    width: '60dp'
+                    on_text: app.rec_wgt.owidth = self.text
+                    disabled: True
+                    text: str(app.rec_wgt.owidth) if app.rec_wgt.owidth else ''
+                TextInput:
+                    input_filter: 'int'
+                    id: oheight
+                    hint_text:  'Height'
+                    size_hint_x: None
+                    width: '60dp'
+                    on_text: app.rec_wgt.oheight = self.text
+                    disabled: True
+                    text: str(app.rec_wgt.oheight) if app.rec_wgt.oheight else ''
+                TextInput:
+                    input_filter: 'float'
+                    id: orate
+                    hint_text:  'Rate'
+                    size_hint_x: None
+                    width: '60dp'
+                    on_text: app.rec_wgt.orate = self.text
+                    disabled: app.rec_wgt.recording
+                    text: str(app.rec_wgt.orate) if app.rec_wgt.orate else ''
+                SLabel:
+                    markup: True
+                    halign: 'left'
+                    text: app.rec_wgt.stats_output_pretty
+                TextInput:
+                    input_filter: 'int'
+                    id: est_sec
+                    hint_text:  'Sec'
+                    size_hint_x: None
+                    width: '60dp'
+                TextInput:
+                    input_filter: 'int'
+                    id: est_count
+                    hint_text:  'Count'
+                    size_hint_x: None
+                    width: '40dp'
+                SLabel:
+                    size_hint_x: None
+                    width: max(self.texture_size[0], 120)
+                    max_lines: 1
+                    on_size: self.text_size = (None, None)
+                    markup: True
+                    halign: 'left'
+                    text: app.rec_wgt.get_estimated_size(est_sec.text, est_count.text, app.rec_wgt.obps)
+
+<CPUBar@BoxLayout>:
+    orientation: 'vertical'
+    text: ''
+    used_color: 1, .3, 0
+    free_color: 0, .55, .6
+    shrink: 10
+    percent_free: 0
+    SLabel:
+        text: root.text
+        size_hint_y: None
+        height: '60dp'
+        valign: 'bottom'
+    Widget:
+        canvas:
+            Color:
+                rgb: root.used_color
+            Rectangle:
+                pos: self.x + root.shrink, self.y
+                size: self.width - 2 * root.shrink, self.height * (1. - root.percent_free)
+            Color:
+                rgb: root.free_color
+            Rectangle:
+                pos: self.x + root.shrink, self. y + self.height * (1. - root.percent_free)
+                size: self.width - 2 * root.shrink, self.height * root.percent_free
+
+<PerformanceStats@BoxLayout>:
+    orientation: 'horizontal'
+    canvas.before:
+        Color:
+            rgba: [0.25, 0.26, 0.54, 0.4]
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: 1, 1, 1, 1
+    CPUBar:
+        text: 'Disk\n' + pretty_space(app.rec_wgt.free_space)
+        percent_free: app.rec_wgt.free_space / float(app.rec_wgt.total_space)
+    CPUBar:
+        text: 'CPU\n{:.0f}%'.format(app.rec_wgt.cpu_percent * 100)
+        percent_free: 1 - app.rec_wgt.cpu_percent
+    CPUBar:
+        text: 'RAM\n{} ({:.0f}%)'.format(pretty_space(app.rec_wgt.free_ram), app.rec_wgt.free_ram / float(app.rec_wgt.total_ram) * 100)
+        percent_free: app.rec_wgt.free_ram / float(app.rec_wgt.total_ram)
+
+<Recorder>:
+    orientation: 'vertical'
+    RecordInput
+    RecordOutput
+    BoxLayout:
+        id: lower_container
+        orientation: 'horizontal'
+        BoxLayout:
+            padding: [10]
+            spacing: 10
+            orientation: 'vertical'
+            BoxLayout:
+                orientation: 'horizontal'
+                PerformanceStats:
+                    id: perfm
+                    size_hint_x: None
+                    width: '200dp'
+                BoxLayout:
+                    orientation: 'vertical'
+                    SLabel:
+                        size_hint_y: None
+                        on_width: self.text_size = (self.width, None)
+                        on_texture_size:
+                            self.texture_size = self.texture_size[0], min(self.parent.height / 2., self.texture_size[1])
+                        height: min(self.parent.height / 2., self.texture_size[1])
+                        markup: True
+                        text: app.rec_wgt.stats_pretty
+                        halign: 'left'
+                        padding_x: 30
+                        font_size: '18dp'
+                    CountDownTimer:
+                        spacing: 10
+                        padding: [20]
+            ToggleButton:
+                on_size:
+                    self.text_size = (None, None)
+                on_parent: app.rec_wgt.record_btn_wgt = self
+                size_hint_y: 0.5
+                text: 'Record' if self.state == 'normal' else app.rec_wgt.oelapsed_pretty
+                on_texture_size:
+                    non_zero = self.texture_size[0] and self.texture_size[1]
+                    if non_zero: scale = min(self.width / float(self.texture_size[0]), self.height / float(self.texture_size[1]))
+                    if non_zero: self.texture_size = self.texture_size[0] * scale, self.texture_size[1] * scale
+                font_size: max(self.height, 12)
+                on_state:
+                    app.rec_wgt.recording = self.state == 'down'
+                    app.set_tittle()
+                    app.rec_wgt.record_count = 0
+                    if self.state == 'down': self.state = 'down' if app.rec_wgt.record_start() else 'normal'
+                    if self.state == 'normal': app.rec_wgt.record_end()
+        Splitter:
+            canvas.before:
+                Color:
+                    rgb: [0, 0, 0]
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+                Color:
+                    rgba: 1, 1, 1, 1
+            max_size: max(lower_container.width - perfm.width, 0)
+            RelativeStencil:
+                on_size: img_buff.reload_buffer()
+                BufferImage:
+                    id: img_buff
+                    size_hint: None, None
+                    size: int(self.iw), int(self.ih)
+                    on_parent: app.rec_wgt.play_image_wgt = self

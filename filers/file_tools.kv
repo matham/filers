@@ -1,0 +1,228 @@
+#:kivy 1.8
+
+
+<FileToolsInput@ColoredStackLayout>:
+    _nothing_here: setattr(app, 'files_wgt', self.parent.parent)
+    size_hint_y: None
+    height: self.minimum_height
+    item_height: path_in.line_height * 2
+    spacing: [5]
+    back_color: (72 / 255., 250 / 255., 102 / 255., .05)
+    BoxLayout:
+        size_hint_y: None
+        height: root.item_height
+        SLabel:
+            text: 'Input:'
+            size_hint_x: None
+            width: '75dp'
+        TextInput:
+            background_color: (252 / 255., 189 / 255., 235 / 255., 1)
+            id: path_in
+            hint_text: 'Input files and directories'
+            disabled: app.files_wgt.running
+            on_triple_tap:
+                app.filebrowser.target = 'src'
+                app.filebrowser.multiselect = True
+                app.filebrowser.dirselect = True
+                app.filebrowser.open()
+                app.filebrowser.callback = partial(app.assign_path, self, fileselect=True, quote=True)
+            text: app.files_wgt.input
+            on_text: app.files_wgt.input = self.text.decode('utf-8')
+    SLabel:
+        text: 'Filter files: '
+        size_hint: None, None
+        size: '100dp', root.item_height
+    TextInput:
+        id: filter_in
+        disabled: app.files_wgt.running
+        background_color: (250 / 255., 236 / 255., 179 / 255., 1)
+        size_hint: None, None
+        size: '300dp', root.item_height
+        hint_text: 'e.g. *.avi'
+        text: app.files_wgt.input_filter
+        on_text: app.files_wgt.input_filter = self.text
+    ToggleButton:
+        size_hint: None, None
+        size: '130dp', root.item_height
+        text: 'Simple filter?'
+        state: True
+        state: 'down' if app.files_wgt.simple_filt else 'normal'
+        disabled: app.files_wgt.running
+        on_state: app.files_wgt.simple_filt = self.state == 'down'
+    SLabel:
+        text: 'Mode: '
+        size_hint: None, None
+        size: '60dp', root.item_height
+        halign: 'right'
+    Spinner:
+        size_hint: None, None
+        size: '150dp', root.item_height
+        values: ['copy', 'verify', 'move', 'delete originals']
+        text: app.files_wgt.mode
+        disabled: app.files_wgt.running
+        on_text: app.files_wgt.mode = self.text
+    Spinner:
+        size_hint: None, None
+        size: '90dp', root.item_height
+        values: ['filename', 'size', 'sha256']
+        text: app.files_wgt.verify_type
+        disabled: app.files_wgt.running
+        on_text: app.files_wgt.verify_type = self.text
+    SLabel:
+        text: 'Target ext: '
+        size_hint: None, None
+        size: '100dp', root.item_height
+    TextInput:
+        id: filter_in
+        disabled: app.files_wgt.running
+        background_color: (250 / 255., 236 / 255., 179 / 255., 1)
+        size_hint: None, None
+        size: '70dp', root.item_height
+        hint_text: '.avi'
+        text: app.files_wgt.ext
+        on_text: app.files_wgt.ext = self.text
+    SLabel:
+        text: 'On error: '
+        size_hint: None, None
+        size: '80dp', root.item_height
+        halign: 'right'
+    Spinner:
+        size_hint: None, None
+        size: '60dp', root.item_height
+        values: ['pause', 'skip']
+        text: app.files_wgt.on_error
+        on_text: app.files_wgt.on_error = self.text
+
+<FileToolsStatus@StackLayout>:
+    orientation: 'bt-rl'
+    size_hint_y: None
+    height: '150dp'
+    spacing: 10
+    Button:
+        id: report_btn
+        text: 'Save\nreport'
+        size_hint: None, None
+        size: 120, root.height / 2 - 5
+        on_press: app.files_wgt.save_report()
+    ToggleButton:
+        text: 'Pause'
+        on_parent: app.files_wgt.pause_wgt = self
+        on_state:
+            app.files_wgt.paused = self.state == 'down'
+            app.files_wgt.set_pause(self.state == 'down')
+        size_hint: None, None
+        size: report_btn.size
+    ToggleButton:
+        id: start_btn
+        text: 'Start' if self.state == 'normal' else 'Stop'
+        on_parent: app.files_wgt.go_wgt = self
+        size_hint: None, None
+        size: report_btn.width, 2 * root.height / 3 - 5
+        on_state:
+            if self.state == 'down': self.state = 'down' if app.files_wgt.start() else 'normal'
+            if self.state == 'normal': app.files_wgt.stop()
+        on_state: app.files_wgt.running = self.state == 'down'
+    ToggleButton:
+        text: 'Preview'
+        size_hint: None, None
+        size: report_btn.width, root.height / 3 - 5
+        state: 'down' if app.files_wgt.preview else 'normal'
+        on_state: app.files_wgt.preview = self.state == 'down'
+        on_press: if self.state == 'down': start_btn.state = 'down'
+        disabled: app.files_wgt.running
+    Widget:
+        id: bar_wgt
+        size_hint: None, None
+        height: root.height / 3. - 5
+        width: (root.width - 240) / 2
+        canvas:
+            Color:
+                rgba: 0, 1, 0, .7
+            Rectangle:
+                pos: self.pos
+                size: self.width * app.files_wgt.percent_done, self.height
+            Color:
+                rgba: (.57, .78, .95, .2) if app.files_wgt.percent_done else (0, 0, 0, 0)
+            Rectangle:
+                pos: self.x + self.width * app.files_wgt.percent_done, self. y
+                size: self.width * (1. - app.files_wgt.percent_done), self.height
+    SLabel:
+        size_hint: None, None
+        width: bar_wgt.width
+        height: 2 * bar_wgt.height
+        text: app.files_wgt.status
+        halign: 'left'
+        markup: True
+    SLabel:
+        size_hint_x: None
+        width: bar_wgt.width
+        on_size: self.text_size = (None, None)
+        padding: [10, 4]
+        on_texture_size:
+            non_zero = self.texture_size[0] and self.texture_size[1]
+            if non_zero: scale = min(self.width / float(self.texture_size[0]), self.height / float(self.texture_size[1]))
+            if non_zero: self.texture_size = self.texture_size[0] * scale, self.texture_size[1] * scale
+        font_size: max(self.height, 12)
+        text: app.files_wgt.remaining_time
+
+<FileTools>:
+    BoxLayout:
+        padding: [3]
+        orientation: 'vertical'
+        FileToolsInput:
+            id: sett
+        SLabel:
+            canvas.before:
+                Color:
+                    rgba: 0, 0, 0, .1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+                Color:
+                    rgba: 1, 1, 1, 1
+            text: '~' * int(2 * self.width / (3 * self._label.get_extents('~')[0]))
+            color: 1, 1, 0, 1
+            size_hint_y: None
+            height: sett.item_height / 3
+        ColoredBoxLayout:
+            size_hint_y: None
+            height: path_out.line_height * 2 + self.padding[1] * 2
+            spacing: 5
+            back_color: (249 / 255., 216 / 255., 51 / 255., .4)
+            SLabel:
+                text: 'Output: '
+                size_hint_x: None
+                width: '75dp'
+            TextInput:
+                id: path_out
+                hint_text: 'Output directory'
+                disabled: app.files_wgt.running
+                on_triple_tap:
+                    app.filebrowser.target = 'dst'
+                    app.filebrowser.open()
+                    app.filebrowser.dirselect = True
+                    app.filebrowser.callback = partial(app.assign_path, self)
+                text: app.files_wgt.output
+                on_text: app.files_wgt.output = self.text.decode('utf-8')
+        SLabel:
+            canvas.before:
+                Color:
+                    rgba: 0, 0, 0, .1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+                Color:
+                    rgba: 1, 1, 1, 1
+            text: '<>' * int(3 * self.width / (4 * self._label.get_extents('<>')[0]))
+            color: 0, 1, 0, 1
+            size_hint_y: None
+            height: sett.item_height
+        FileToolsStatus
+        Splitter:
+            sizable_from: 'bottom'
+            min_size: sett.item_height * 2
+            max_size: 10000
+            ScrollLabel:
+                text: app.files_wgt.cmd
+        ScrollLabel:
+            text: app.files_wgt.error_log

@@ -1,0 +1,186 @@
+#:kivy 1.8
+#:import str_to_float tools.str_to_float
+#:import pretty_time tools.pretty_time
+
+<SLabel@Label>:
+    halign: 'center'
+    valign: 'middle'
+    text_size: self.size
+
+<Button>:
+    halign: 'center'
+    valign: 'middle'
+    text_size: self.size
+
+
+<TextInput>:
+    multiline: False
+    write_tab: False
+
+
+<RotatedLabel@SLabel>:
+    angle: 0.
+    text_size: self.size[1], self.size[0]
+    canvas.before:
+        PushMatrix
+        Rotate:
+            angle: self.angle
+            axis: 0, 0, 1
+            origin: self.center
+    canvas.after:
+        PopMatrix
+
+
+<ColoredBoxLayout@BoxLayout>:
+    padding: [5, 3]
+    back_color: 1, 1, 1, 1
+    canvas.before:
+        Color:
+            rgba: root.back_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: 1, 1, 1, 1
+        BorderImage:
+            border: (16, 16, 16, 16)
+            pos: self.pos
+            size: self.size
+            source: 'media/blue_border.png'
+
+
+<ColoredStackLayout@StackLayout>:
+    padding: [5, 3]
+    back_color: 1, 1, 1, 1
+    canvas.before:
+        Color:
+            rgba: root.back_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: 1, 1, 1, 1
+        BorderImage:
+            border: (16, 16, 16, 16)
+            pos: self.pos
+            size: self.size
+            source: 'media/blue_border.png'
+
+
+<ScrollView>:
+    bar_width: '9dp'
+    scroll_type: ['bars']
+    scroll_wheel_distance: 60
+
+
+<ScrollLabel@ScrollView>:
+    text: ''
+    text_height: label.height
+    SLabel:
+        size_hint: None, None
+        id: label
+        text: root.text
+        on_size: self.text_size = (None, None)
+        size: self.texture_size
+        halign: 'left'
+        text_size: None, None
+        markup: True
+        padding: [10, 4]
+
+
+<RelativeStencil@RelativeLayout, StencilView>
+
+
+<PopupBrowser>:
+    size_hint: (None, None)
+    size: (min(self.parent.width, 800), min(self.parent.height, 600)) if self.parent else (100, 100)
+    on_open:
+        file_browser.path = app.last_src_path if self.target == 'src' else app.last_tgt_path
+    target: 'src'
+    on_dismiss:
+        self.dirselect = False
+        self.callback = None
+        self.multiselect = False
+        if self.target == 'src': app.last_src_path = file_browser.path
+        if self.target == 'dst': app.last_tgt_path = file_browser.path
+    dirselect: False
+    multiselect: False
+    FileBrowser:
+        id: file_browser
+        path: '/'
+        dirselect: True
+        multiselect: root.multiselect
+        on_success:
+            if root.callback: root.callback(self.path, self.selection)
+            if self.selection: root.dismiss()
+        on_submit:
+            if root.callback: root.callback(self.path, self.selection)
+            root.dismiss()
+        on_cancel_state: root.dismiss()
+
+
+<CountDownTimer>:
+    orientation: 'vertical'
+    counter: str_to_float(counter.text, val_type=float, err_val=0.)
+    ToggleButton:
+        on_size: self.text_size = (None, None)
+        text: pretty_time(root.counter) if root.counter else ''
+        on_texture_size:
+            non_zero = self.texture_size[0] and self.texture_size[1]
+            if non_zero: scale = min(self.width / float(self.texture_size[0]), self.height / float(self.texture_size[1]))
+            if non_zero: self.texture_size = self.texture_size[0] * scale, self.texture_size[1] * scale
+        font_size: max(self.height, 12)
+        on_state:
+            if self.state == 'down': self.state = root.count_start()
+            else: root.count_end()
+        background_color: root.blink_color
+        background_down: ''
+    BoxLayout:
+        size_hint_y: None
+        height: '60dp'
+        TextInput:
+            input_filter: 'float'
+            id: counter
+            font_size: '28dp'
+            disabled: root.counting
+        Button:
+            text: 'Reset'
+            disabled: root.counting
+            on_press: root.counter = str_to_float(counter.text, val_type=float, err_val=0.)
+
+
+<MainFrame>:
+    panel: panel
+    orientation: 'vertical'
+    SLabel:
+        size_hint_y: None
+        height: '40dp'
+        text: 'Filers v' + app.version + ', CPL lab'
+    TabbedPanel:
+        id: panel
+        on_parent: app.tabbed_wgt = self
+        do_default_tab: False
+        tab_pos: 'bottom_left'
+        tab_width: self.width / 11 * 2
+        active_wgt: app.rec_wgt if self.current_tab == record else (app.proc_wgt if self.current_tab == process else app.files_wgt)
+        TabbedPanelItem:
+            id: record
+            text: 'Record'
+            Recorder
+        TabbedPanelItem:
+            id: process
+            text: 'Process'
+            Processor
+        TabbedPanelItem:
+            id: tools
+            text: 'File tools'
+            FileTools
+        TabbedPanelItem:
+            text: 'Help'
+            RstDocument:
+                source: app.help_source
+        TabbedPanelItem:
+            id: tools
+            text: 'Log'
+            ScrollLabel:
+                text: '\n'.join(app.filers_log)

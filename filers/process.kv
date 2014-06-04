@@ -1,0 +1,390 @@
+#:kivy 1.8
+
+<ProcessInput@ColoredBoxLayout>:
+    _nothing_here: setattr(app, 'proc_wgt', self.parent)
+    size_hint_y: None
+    height: path_in.line_height * 4 + 10
+    orientation: 'vertical'
+    back_color: (72 / 255., 250 / 255., 102 / 255., .1)
+    BoxLayout:
+        SLabel:
+            text: 'Input:'
+            size_hint_x: None
+            width: '75dp'
+        TextInput:
+            background_color: (252 / 255., 189 / 255., 235 / 255., 1)
+            id: path_in
+            hint_text: 'Input files and directories'
+            disabled: app.proc_wgt.ext_running
+            on_triple_tap:
+                app.filebrowser.target = 'src'
+                app.filebrowser.multiselect = True
+                app.filebrowser.dirselect = True
+                app.filebrowser.open()
+                app.filebrowser.callback = partial(app.assign_path, self, fileselect=True, quote=True)
+            text: app.proc_wgt.input
+            on_text: app.proc_wgt.input = self.text.decode('utf-8')
+    BoxLayout:
+        spacing: 8
+        SLabel:
+            text: 'Filter files: '
+            size_hint_x: None
+            width: '80dp'
+        TextInput:
+            id: filter_in
+            disabled: app.proc_wgt.ext_running
+            background_color: (250 / 255., 236 / 255., 179 / 255., 1)
+            size_hint_x: None
+            width: '200dp'
+            hint_text: 'e.g. *.avi'
+            text: app.proc_wgt.input_filter
+            on_text: app.proc_wgt.input_filter = self.text
+        ToggleButton:
+            size_hint_x: None
+            width: '130dp'
+            text: 'Simple filter?'
+            state: 'down' if app.proc_wgt.simple_filt else 'normal'
+            disabled: app.proc_wgt.ext_running
+            on_state: app.proc_wgt.simple_filt = self.state == 'down'
+        SLabel:
+            text: 'Merge grouping: '
+            size_hint_x: None
+            width: '130dp'
+            halign: 'right'
+        TextInput:
+            background_color: (198 / 255., 255 / 255., 213 / 255., 1)
+            hint_text: 'group matching'
+            text: app.proc_wgt.group_filt
+            disabled: app.proc_wgt.ext_running
+            on_text: app.proc_wgt.group_filt = self.text
+        SLabel:
+            size_hint_x: 0.7
+            text: ' '
+
+
+<ProcessCut@ColoredBoxLayout>:
+    size_hint: None, None
+    width: start.width + start_label.width + end.width + end_label.width + 10
+    height: start.line_height * 2 + 10
+    back_color: (0 / 255., 0 / 255., 0 / 255., .3)
+    SLabel:
+        id: start_label
+        text: 'Start: '
+        size_hint_x: None
+        width: '80dp'
+    TextInput:
+        input_filter: 'float'
+        id: start
+        disabled: app.proc_wgt.ext_running
+        background_color: (249 / 255., 201 / 255., 169 / 255., 1)
+        size_hint_x: None
+        width: '100dp'
+        hint_text: '10'
+        text: str(app.proc_wgt.input_start) if app.proc_wgt.input_start else ''
+        on_text: app.proc_wgt.input_start = self.text
+    SLabel:
+        id: end_label
+        text: 'End: '
+        size_hint_x: None
+        width: '80dp'
+    TextInput:
+        input_filter: 'float'
+        id: end
+        disabled: app.proc_wgt.ext_running
+        background_color: (249 / 255., 201 / 255., 169 / 255., 1)
+        size_hint_x: None
+        width: '100dp'
+        hint_text: '50'
+        text: str(app.proc_wgt.input_end) if app.proc_wgt.input_end else ''
+        on_text: app.proc_wgt.input_end = self.text
+
+<ProcessSettings@ColoredStackLayout>:
+    size_hint_y: None
+    height: self.minimum_height
+    back_color: (204 / 255., 9 / 255., 226 / 255., .05)
+    item_height: append_text.line_height * 2
+    SLabel:
+        text: 'Interval: '
+        size_hint: None, None
+        size: '100dp', root.item_height
+    ProcessCut
+    SLabel:
+        text: 'Compression: '
+        size_hint: None, None
+        size: '130dp', root.item_height
+    ColoredStackLayout:
+        size_hint: None, None
+        height: root.item_height + 6
+        width: sum([c.width for c in self.children])
+        back_color: (0 / 255., 0 / 255., 0 / 255., .3)
+        Spinner:
+            values: ['raw', 'h264']
+            size_hint: None, None
+            size: '50dp', root.item_height
+            text: app.proc_wgt.out_codec
+            disabled: app.proc_wgt.ext_running
+            on_text: app.proc_wgt.out_codec = self.text
+        SLabel:
+            size_hint: None, None
+            size: '190dp', root.item_height
+            text: 'CRF (higher = smaller file):'
+        Spinner:
+            size_hint: None, None
+            size: '60dp', root.item_height
+            values: map(str, range(18, 29))
+            text: app.proc_wgt.crf
+            disabled: app.proc_wgt.ext_running
+            on_text: app.proc_wgt.crf = self.text
+        SLabel:
+            size_hint: None, None
+            size: '80dp', root.item_height
+            text: 'Speed:'
+        Spinner:
+            size_hint: None, None
+            size: '100dp', root.item_height
+            values: ['ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow']
+            text: app.proc_wgt.compress_speed
+            disabled: app.proc_wgt.ext_running
+            on_text: app.proc_wgt.compress_speed = self.text
+    SLabel:
+        text: 'Merge type: '
+        size_hint: None, None
+        size: '110dp', root.item_height
+    Spinner:
+        id: merge_val
+        values: ['none', 'overlay', 'concatenate']
+        size_hint: None, None
+        size: '120dp', root.item_height
+        text: app.proc_wgt.merge_type
+        disabled: app.proc_wgt.ext_running
+        on_text: app.proc_wgt.merge_type = self.text
+    ToggleButton:
+        text: 'Overwrite existing?'
+        size_hint: None, None
+        size: '160dp', root.item_height
+        state: 'down' if app.proc_wgt.out_overwrite else 'normal'
+        disabled: app.proc_wgt.ext_running
+        on_state: app.proc_wgt.out_overwrite = self.state == 'down'
+    ToggleButton:
+        text: 'Include audio?'
+        size_hint: None, None
+        size: '130dp', root.item_height
+        state: 'down' if app.proc_wgt.out_audio else 'normal'
+        disabled: app.proc_wgt.ext_running
+        on_state: app.proc_wgt.out_audio = self.state == 'down'
+    SLabel:
+        size_hint: None, None
+        size: '150dp', root.item_height
+        text: 'Number of threads:'
+    Spinner:
+        size_hint: None, None
+        size: '60dp', root.item_height
+        values: ['auto'] + map(str, range(1, 17))
+        text: app.proc_wgt.num_threads
+        disabled: app.proc_wgt.ext_running
+        on_text: app.proc_wgt.num_threads = self.text
+    SLabel:
+        text: 'Append text: '
+        size_hint: None, None
+        size: '120dp', root.item_height
+    TextInput:
+        id: append_text
+        size_hint: .3, None
+        size: '60dp', root.item_height
+        background_color: (229 / 255., 185 / 255., 255 / 255., 1)
+        hint_text: 'append'
+        text: app.proc_wgt.out_append
+        disabled: app.proc_wgt.ext_running
+        on_text: app.proc_wgt.out_append = self.text
+    SLabel:
+        text: 'Additional args: '
+        size_hint: None, None
+        size: '140dp', root.item_height
+    TextInput:
+        id: append_text
+        size_hint: .3, None
+        size: '60dp', root.item_height
+        background_color: (229 / 255., 185 / 255., 255 / 255., 1)
+        hint_text: 'Arguments'
+        text: app.proc_wgt.add_command
+        disabled: app.proc_wgt.ext_running
+        on_text: app.proc_wgt.add_command = self.text
+
+<ProcessStatus@StackLayout>:
+    orientation: 'bt-rl'
+    size_hint_y: None
+    height: '150dp'
+    spacing: 10
+    Button:
+        id: report_btn
+        text: 'Save\nreport'
+        size_hint: None, None
+        size: 120, root.height / 2 - 5
+        on_press: app.proc_wgt.save_report()
+    ToggleButton:
+        text: 'Pause'
+        on_parent: app.proc_wgt.pause_wgt = self
+        on_state: app.proc_wgt.paused = self.state == 'down'
+        size_hint: None, None
+        size: report_btn.size
+        on_state: self.state = 'down' if app.proc_wgt.toggle_pause() else 'normal'
+    ToggleButton:
+        text: 'Start' if self.state == 'normal' else 'Stop'
+        on_parent: app.proc_wgt.go_wgt = self
+        size_hint_x: None
+        width: 120
+        on_state:
+            if self.state == 'down': self.state = 'down' if app.proc_wgt.start() else 'normal'
+            if self.state == 'normal': app.proc_wgt.stop()
+        on_state: app.proc_wgt.ext_running = self.state == 'down'
+    Widget:
+        id: bar_wgt
+        size_hint: None, None
+        height: root.height / 3. - 5
+        width: (root.width - 240) / 2
+        canvas:
+            Color:
+                rgba: 0, 1, 0, .7
+            Rectangle:
+                pos: self.pos
+                size: self.width * app.proc_wgt.percent_done, self.height
+            Color:
+                rgba: (.57, .78, .95, .2) if app.proc_wgt.percent_done else (0, 0, 0, 0)
+            Rectangle:
+                pos: self.x + self.width * app.proc_wgt.percent_done, self.y
+                size: self.width * (1. - app.proc_wgt.percent_done), self.height
+    SLabel:
+        size_hint: None, None
+        width: bar_wgt.width
+        height: 2 * bar_wgt.height
+        text: app.proc_wgt.status
+        halign: 'left'
+        markup: True
+    SLabel:
+        size_hint_x: None
+        width: bar_wgt.width
+        on_size: self.text_size = (None, None)
+        padding: [10, 4]
+        on_texture_size:
+            non_zero = self.texture_size[0] and self.texture_size[1]
+            if non_zero: scale = min(self.width / float(self.texture_size[0]), self.height / float(self.texture_size[1]))
+            if non_zero: self.texture_size = self.texture_size[0] * scale, self.texture_size[1] * scale
+        font_size: max(self.height, 12)
+        text: app.proc_wgt.remaining_time
+
+<PreProcess@ColoredBoxLayout>:
+    size_hint_y: None
+    height: command.line_height + command.padding[1] * 2 + self.padding[1] * 2
+    spacing: 5
+    back_color: (204 / 255., 9 / 255., 226 / 255., .05)
+    SLabel:
+        text: 'Pre-process cmd: '
+        size_hint_x: None
+        width: '130dp'
+    TextInput:
+        hint_text: 'Command'
+        disabled: app.proc_wgt.ext_running
+        background_color: (229 / 255., 185 / 255., 255 / 255., 1)
+        text: app.proc_wgt.pre_process
+        on_text: app.proc_wgt.pre_process = self.text
+    SLabel:
+        text: 'Match pattern: '
+        size_hint_x: None
+        width: '110dp'
+    TextInput:
+        id: command
+        hint_text: 'Command'
+        disabled: app.proc_wgt.ext_running
+        background_color: (229 / 255., 185 / 255., 255 / 255., 1)
+        text: app.proc_wgt.pre_process_pat
+        on_text: app.proc_wgt.pre_process_pat = self.text
+
+<Processor>:
+    padding: [3]
+    cols: 1
+    ProcessInput
+    SLabel:
+        canvas.before:
+            Color:
+                rgba: 0, 0, 0, .1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+            Color:
+                rgba: 1, 1, 1, 1
+        text: '~' * int(2 * self.width / (3 * self._label.get_extents('~')[0]))
+        color: 1, 1, 0, 1
+        size_hint_y: None
+        height: sett.item_height / 3
+    Splitter:
+        sizable_from: 'bottom'
+        min_size: 5
+        max_size: min(process_setts.minimum_height + 15, max(30, process_setts.minimum_height + 15 - max(0, root.minimum_height - root.height)))
+        height: 0
+        size_hint_y: None
+        ScrollView:
+            GridLayout:
+                cols: 1
+                size_hint_y: None
+                height: self.minimum_height
+                id: process_setts
+                orientation: 'vertical'
+                ProcessSettings
+                    id: sett
+                PreProcess:
+                    id: pre_proc
+    SLabel:
+        canvas.before:
+            Color:
+                rgba: 0, 0, 0, .1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+            Color:
+                rgba: 1, 1, 1, 1
+        text: '~' * int(2 * self.width / (3 * self._label.get_extents('~')[0]))
+        color: 1, 1, 0, 1
+        size_hint_y: None
+        height: sett.item_height / 3
+    ColoredBoxLayout:
+        size_hint_y: None
+        height: path_out.line_height * 2 + self.padding[1] * 2
+        spacing: 5
+        back_color: (249 / 255., 216 / 255., 51 / 255., .4)
+        SLabel:
+            text: 'Output: '
+            size_hint_x: None
+            width: '75dp'
+        TextInput:
+            id: path_out
+            hint_text: 'Output directory'
+            disabled: app.proc_wgt.ext_running
+            on_triple_tap:
+                app.filebrowser.target = 'dst'
+                app.filebrowser.open()
+                app.filebrowser.dirselect = True
+                app.filebrowser.callback = partial(app.assign_path, self)
+            text: app.proc_wgt.output
+            on_text: app.proc_wgt.output = self.text.decode('utf-8')
+    SLabel:
+        canvas.before:
+            Color:
+                rgba: 0, 0, 0, .1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+            Color:
+                rgba: 1, 1, 1, 1
+        text: '<>' * int(3 * self.width / (4 * self._label.get_extents('<>')[0]))
+        color: 0, 1, 0, 1
+        size_hint_y: None
+        height: sett.item_height
+    ProcessStatus
+    SLabel:
+        size_hint_y: None
+        height: sett.item_height
+        halign: 'left'
+        padding: [10, 4]
+        text: app.proc_wgt.cmd
+    ScrollLabel:
+        text: app.proc_wgt.error_log
