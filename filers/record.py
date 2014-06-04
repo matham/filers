@@ -239,7 +239,7 @@ class Recorder(BoxLayout):
     ''' True whenever the instance is recording a output file. '''
 
     def get_title(self):
-        return (' Recording - {}'.format(self.record_filename)
+        return (' Recording - {}'.format(self.current_ofilename)
                 if self.recording else '')
     window_title = AliasProperty(get_title, None)
     ''' The title used by the window when the :class:`Recorder` is active. '''

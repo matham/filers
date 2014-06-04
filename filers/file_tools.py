@@ -586,14 +586,13 @@ class FileTools(BoxLayout):
         self.running = True
         try:
             self.thread = Thread(target=self.process_thread,
-                                 name=self.ini_section)
+                                 name='File_tools')
             self.thread.start()
         except:
             logging.error('File tools: Thread failed:\n' +
                           traceback.format_exc())
             self.stop()
             return False
-        self.ini.write()
         return True
 
     def set_pause(self, pause):

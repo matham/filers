@@ -1,1 +1,3 @@
 doc/build/
+*.pyc
+filers/filers.ini

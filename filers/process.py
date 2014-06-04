@@ -392,8 +392,7 @@ class Processor(GridLayout):
         elif not (exists(ffmpeg_path) and isfile(ffmpeg_path)):
             ffmpeg_path = ''
         if not ffmpeg_path:
-            logging.exception('{}: Cannot find ffmpeg binary.'.\
-                              format(self.ini_section))
+            logging.exception('Processor: Cannot find ffmpeg binary.')
         self.ffmpeg_path = ffmpeg_path
 
     def __del__(self):
@@ -551,7 +550,6 @@ class Processor(GridLayout):
                           traceback.format_exc())
             self.stop()
             return False
-        self.ini.write()
         return True
 
     def toggle_pause(self):
