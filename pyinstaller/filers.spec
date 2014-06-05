@@ -4,6 +4,7 @@ install_hooks(globals())
 
 import os
 import filers
+import platform
 import ffpyplayer
 from os.path import join, dirname
 from os import environ
@@ -46,7 +47,8 @@ exe = EXE(pyz, [],
           a.binaries,
           a.zipfiles,
           a.datas,
-          name=join('dist', 'Filers.exe'),
+          name=join('dist', 'Filers{}.exe'
+            .format('64' if platform.architecture()[0] == '64bit' else '')),
           debug=False,
           strip=None,
           upx=False,
