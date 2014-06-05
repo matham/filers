@@ -638,8 +638,10 @@ class Recorder(BoxLayout):
         ''' The callback used by :py:mod:`ffpylayer` to notify us of issues.
         '''
         if selector == 'quit' or selector == 'eof':
-            self.finish = True
-            self.queue.put('failure', 'Internal ffpyplayer stopped playing.')
+            if self.running:
+                self.finish = True
+                self.queue.put('failure', 'Internal ffpyplayer stopped '
+                               'playing.')
 
     def play(self, color=True):
         ''' Starts to play the input video file / webcam.
