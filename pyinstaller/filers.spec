@@ -50,5 +50,6 @@ exe = EXE(pyz, [],
           debug=False,
           strip=None,
           upx=False,
-          console=True,
-          icon=join(base_dir, join(base_dir, 'filers', 'media', 'Dancing_rats_clean.ico')))
+          console=False,
+          icon=join(base_dir, join(base_dir, 'filers', 'media',
+                                   'Dancing_rats_clean.ico')))
