@@ -1,6 +1,6 @@
 #:kivy 1.8
-#:import str_to_float tools.str_to_float
-#:import pretty_time tools.pretty_time
+#:import str_to_float filers.tools.str_to_float
+#:import pretty_time filers.tools.pretty_time
 
 <SLabel@Label>:
     halign: 'center'
@@ -40,13 +40,13 @@
         Rectangle:
             pos: self.pos
             size: self.size
-        Color:
-            rgba: 1, 1, 1, 1
         BorderImage:
             border: (16, 16, 16, 16)
             pos: self.pos
             size: self.size
             source: 'media/blue_border.png'
+        Color:
+            rgba: 1, 1, 1, 1
 
 
 <ColoredStackLayout@StackLayout>:
@@ -58,13 +58,13 @@
         Rectangle:
             pos: self.pos
             size: self.size
-        Color:
-            rgba: 1, 1, 1, 1
         BorderImage:
             border: (16, 16, 16, 16)
             pos: self.pos
             size: self.size
             source: 'media/blue_border.png'
+        Color:
+            rgba: 1, 1, 1, 1
 
 
 <ScrollView>:
