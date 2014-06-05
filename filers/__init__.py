@@ -5,7 +5,7 @@ manipulate files ensuring that they are not lost in the process.
 
 __all__ = ('FilerException', 'config_name')
 
-__version__ = '0.1'
+__version__ = '0.2-dev'
 
 
 config_name = 'Filers'
