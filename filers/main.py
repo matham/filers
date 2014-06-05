@@ -195,6 +195,12 @@ def run_filers():
     '''
     Runs the filers application.
     '''
+
+    def request_close(*largs, **kwargs):
+        if kwargs.get('source', None) == 'keyboard':
+            return True
+    Window.bind(on_request_close=request_close)
+
     logger_func = {'quiet': logging.critical, 'panic': logging.critical,
                    'fatal': logging.critical, 'error': logging.error,
                    'warning': logging.warning, 'info': logging.info,
