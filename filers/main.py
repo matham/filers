@@ -1,7 +1,7 @@
 
 # TDOD: filter config values for errors.
 
-__all__ = ('MainFrame', 'FilersApp')
+__all__ = ('MainFrame', 'FilersApp', 'run_filers')
 
 import kivy
 import sys
@@ -113,9 +113,10 @@ class FilersApp(App):
 
     def build(self):
         self.filebrowser = PopupBrowser()
-        Builder.load_file('record.kv')
-        Builder.load_file('process.kv')
-        Builder.load_file('file_tools.kv')
+        root = os.path.abspath(dirname(__file__))
+        Builder.load_file(join(root, 'record.kv'))
+        Builder.load_file(join(root, 'process.kv'))
+        Builder.load_file(join(root, 'file_tools.kv'))
         frame = MainFrame()
         #inspector.create_inspector(Window, frame)
         return frame
@@ -123,11 +124,11 @@ class FilersApp(App):
     def on_start(self):
 
         if getattr(sys, 'frozen', False):
-            app_path = os.path.dirname(sys.executable)
+            app_path = dirname(sys.executable)
             self.help_source = join(dirname(__file__), 'doc', 'source',
                                     'help_kivy.rst')
         else:
-            app_path = os.path.dirname(__file__)
+            app_path = dirname(__file__)
             self.help_source = join(dirname(dirname(__file__)), 'doc',
                                     'source', 'help_kivy.rst')
 
@@ -179,7 +180,6 @@ class FilersApp(App):
         '''
         abspath = os.path.abspath
         join = os.path.join
-        dirname = os.path.dirname
         files = [abspath(join(path, f)) for f in selection]
         for i in range(len(files)):
             if (not fileselect) and not os.path.isdir(files[i]):
@@ -191,7 +191,10 @@ class FilersApp(App):
         text.text = ', '.join(files)
 
 
-if __name__ == '__main__':
+def run_filers():
+    '''
+    Runs the filers application.
+    '''
     logger_func = {'quiet': logging.critical, 'panic': logging.critical,
                    'fatal': logging.critical, 'error': logging.error,
                    'warning': logging.warning, 'info': logging.info,
@@ -237,3 +240,7 @@ if __name__ == '__main__':
         a.files_wgt.stop()
     if err:
         six.reraise(*err)
+
+
+if __name__ == '__main__':
+    run_filers()
