@@ -12,14 +12,14 @@ organizing and re-ordering files en-masse.
 
 To run, you do ``python main.py``.
 
-This project requires the following projects:
+Filers requires the following projects:
 
-#. python
-#. kivy
-#. kivy garden - FileBrowser
-#. ffpyplyaer
-#. psutil
-#. six
+* python
+* kivy
+* kivy garden - FileBrowser
+* ffpyplyaer
+* psutil
+* six
 
 
 Packaging
