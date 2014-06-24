@@ -707,7 +707,7 @@ class Recorder(BoxLayout):
 
         src_fmt = ''
         s = time.clock()
-        while (not self.finish) and time.clock() - s < 10.:
+        while (not self.finish) and time.clock() - s < 30.:
             src_fmt = ffplayer.get_metadata().get('src_pix_fmt')
             if src_fmt:
                 break
