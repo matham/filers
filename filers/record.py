@@ -377,8 +377,11 @@ class Recorder(BoxLayout):
 
         def update_bps(*l):
             try:
-                rate = sum(get_image_size(self.ipix_fmt, self.iwidth,
-                                          self.iheight)) * self.irate
+                if self.ipix_fmt and self.iwidth and self.iheight:
+                    rate = sum(get_image_size(self.ipix_fmt, self.iwidth,
+                                              self.iheight)) * self.irate
+                else:
+                    rate = 0.
             except:
                 rate = 0.
             self.ibps = rate
@@ -388,7 +391,10 @@ class Recorder(BoxLayout):
             width = self.owidth if self.owidth else self.iwidth
             height = self.oheight if self.oheight else self.iheight
             try:
-                rate = sum(get_image_size(pix_fmt, width, height)) * rate
+                if pix_fmt and width and height:
+                    rate = sum(get_image_size(pix_fmt, width, height)) * rate
+                else:
+                    rate = 0.
             except:
                 rate = 0.
             self.obps = rate
@@ -665,21 +671,21 @@ class Recorder(BoxLayout):
         ff_opts = {'sync': 'video', 'an': True, 'sn': True, 'paused': True}
         ipix_fmt, ifmt, icodec = self.ipix_fmt, self.ifmt, self.icodec
         if ipix_fmt:
-            ff_opts['out_fmt'] = ipix_fmt
+            ff_opts['out_fmt'] = bytes(ipix_fmt)
         if ifmt:
-            ff_opts['f'] = ifmt
+            ff_opts['f'] = bytes(ifmt)
         if icodec:
-            ff_opts['vcodec'] = icodec
+            ff_opts['vcodec'] = bytes(icodec)
 
         lib_opts = {}
         if ifmt == 'dshow':
             if ipix_fmt:
-                lib_opts['pixel_format'] = ipix_fmt
+                lib_opts['pixel_format'] = bytes(ipix_fmt)
             if irate:
-                lib_opts['framerate'] = str(irate)
+                lib_opts['framerate'] = bytes(str(irate))
             iw, ih = self.iwidth, self.iheight
             if iw and ih:
-                lib_opts['video_size'] = '{}x{}'.format(iw, ih)
+                lib_opts['video_size'] = bytes('{}x{}'.format(iw, ih))
             #==================================================================
             # if c['ipix_fmt'] and c['iwidth'] and c['iheight']:
             #     lib_opts['rtbufsize'] = sum(get_image_size(c['ipix_fmt'],
