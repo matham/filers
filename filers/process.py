@@ -860,7 +860,7 @@ class Processor(GridLayout):
                                   out_count_done, out_count_total, bps,
                                   time_total, t_left))
                 success_list.append('{}\n{}'.format(cmd, stderrdata))
-            except Exception, e:
+            except Exception as e:
                 in_size_total -= fsize
                 msg = '{}\n{}'.format(cmd, e.message)
                 error_list.append(msg)

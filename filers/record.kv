@@ -149,6 +149,8 @@
         Rectangle:
             pos: self.pos
             size: self.size
+        Color:
+            rgba: 1, 1, 1, 1
         BorderImage:
             border: (16, 16, 16, 16)
             pos: self.pos
@@ -358,6 +360,7 @@
                         markup: True
                         text: app.rec_wgt.stats_pretty
                         halign: 'left'
+                        valign: 'top'
                         padding_x: 30
                         font_size: '18dp'
                     CountDownTimer:
