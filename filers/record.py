@@ -21,6 +21,7 @@ import psutil
 import time
 from fractions import Fraction
 import traceback
+from time import clock
 from functools import partial
 from kivy.weakmethod import WeakMethod
 from kivy.utils import get_hex_from_color
@@ -338,6 +339,10 @@ class Recorder(BoxLayout):
 
     Everytime a recording video is stopped recording, this value automatically
     increments.
+    '''
+    ignore_ts = ConfigProperty(False, 'ignore_ts', to_bool)
+    ''' If the timestamps should be ignored and instead the current time
+    should be used to timestamp the frames.
     '''
 
     play_image_wgt = None
@@ -828,13 +833,14 @@ class Recorder(BoxLayout):
         t = 1 / (self.irate * 2.)
         t_start = 0.
         skip_count = 0
-        invl_start = time.clock()
+        invl_start = clock()
         frame_count = 0
+        ignore = self.ignore_ts
 
         try:
             while not self.finish:
                 img, val = player.get_frame()
-                invl_end = time.clock()
+                invl_end = clock()
                 if invl_end - invl_start >= 1.:
                     put('fps', frame_count / (invl_end - invl_start))
                     frame_count = 0
@@ -844,15 +850,19 @@ class Recorder(BoxLayout):
                 if not img:
                     time.sleep(min(val, t) if val else t)
                     continue
+                if ignore:
+                    ts = invl_end
+                else:
+                    ts = img[1]
                 frame_count += 1
                 if recorder != self.ff_recorder:
-                    t_start = img[1]
+                    t_start = ts
                     recorder = self.ff_recorder
                     skip_count = 0
                     put('skip_count', 0)
                 put('image', img[0])
                 if recorder:
-                    pts = img[1] - t_start
+                    pts = ts - t_start
                     try:
                         put('record_stats', (pts, recorder.write_frame(img[0],
                             pts, 0)))
