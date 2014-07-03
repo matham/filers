@@ -357,8 +357,8 @@
                         size_hint_y: None
                         on_width: self.text_size = (self.width, None)
                         on_texture_size:
-                            self.texture_size = self.texture_size[0], min(self.parent.height / 2., self.texture_size[1])
-                        height: min(self.parent.height / 2., self.texture_size[1])
+                            self.texture_size = self.texture_size[0], min(self.parent.height, self.texture_size[1])
+                        height: min(self.parent.height, self.texture_size[1])
                         markup: True
                         text: app.rec_wgt.stats_pretty
                         halign: 'left'
