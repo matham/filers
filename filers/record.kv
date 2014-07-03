@@ -52,6 +52,7 @@
                         iopts.has_changed = True
                     text: app.rec_wgt.idshow_dev
                     on_text: iopts.values = app.rec_wgt.set_cam(self.text, iopts.text)
+                    on_is_open: if not self.is_open: iopts.values = app.rec_wgt.set_cam(self.text, iopts.text)
                 Spinner:
                     has_changed: False
                     id: iopts
@@ -59,6 +60,7 @@
                     disabled: play.state == 'down'
                     on_text:
                         if self.has_changed: app.rec_wgt.set_cam_opts(icam.text, self.text)
+                    on_is_open: if not self.is_open: app.rec_wgt.set_cam_opts(icam.text, self.text)
                 TextInput:
                     id: ifilename
                     disabled: play.state == 'down'

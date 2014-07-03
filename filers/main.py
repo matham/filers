@@ -244,7 +244,7 @@ def run_filers():
         a.proc_wgt.stop()
     if a.files_wgt:
         a.files_wgt.stop()
-    if err:
+    if err is not None:
         six.reraise(*err)
 
 
