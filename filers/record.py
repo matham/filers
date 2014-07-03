@@ -430,9 +430,6 @@ class Recorder(BoxLayout):
                   oext=update_filename, odir=update_filename)
         self.update_diskspace()
 
-    def __del__(self):
-        self.stop()
-
     def filers_start(self):
         '''
         Should be called after instance creation when the user is ready to
