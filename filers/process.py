@@ -828,24 +828,36 @@ class Processor(GridLayout):
                 if not exists(d):
                     try:
                         makedirs(d)
-                    except:
+                    except Exception as e:
                         pass
                 if pre:
-                    sprocess = sp.Popen(pre.format(src), stdout=sp.PIPE)
-                    stdoutdata, _ = sprocess.communicate()
+                    info = sp.STARTUPINFO()
+                    info.dwFlags = sp.STARTF_USESHOWWINDOW
+                    info.wShowWindow = sp.SW_HIDE
+                    sprocess = sp.Popen(pre.format(src), stdout=sp.PIPE,
+                        stderr=sp.PIPE, stdin=sp.PIPE, startupinfo=info)
+                    sprocess.stdin.close()
+                    stdoutdata, stderrdata = sprocess.communicate()
                     if sprocess.wait():
-                        raise FilerException('Pre process error: {}'.\
-                                             format(stdoutdata))
+                        raise FilerException('Pre process error: \n{}\n{}'.\
+                                             format(stdoutdata, stderrdata))
                     m = match(pre_pat, stdoutdata)
                     if not m:
                         raise FilerException('Match not found in pre'
                         '-processing output')
                     cmd = cmd.format(*m.groups())
                 put('file_cmd', cmd)
-                sprocess = sp.Popen(cmd, stderr=sp.PIPE)
-                _, stderrdata = sprocess.communicate()
+
+                info = sp.STARTUPINFO()
+                info.dwFlags = sp.STARTF_USESHOWWINDOW
+                info.wShowWindow = sp.SW_HIDE
+                sprocess = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE,
+                                    stdin=sp.PIPE, startupinfo=info)
+                sprocess.stdin.close()
+                stdoutdata, stderrdata = sprocess.communicate()
                 if sprocess.wait():
-                    raise FilerException(stderrdata)
+                    raise FilerException('Process error: \n{}\n{}'.\
+                                         format(stdoutdata, stderrdata))
                 out_size_done += getsize(dst)
                 in_size_done += fsize
                 in_count_done += fcount
