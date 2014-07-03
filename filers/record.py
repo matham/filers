@@ -32,7 +32,7 @@ from kivy.properties import (NumericProperty, ReferenceListProperty,
     ObjectProperty, ListProperty, StringProperty, BooleanProperty,
     DictProperty, AliasProperty, OptionProperty, ConfigParserProperty)
 from filers.tools import (str_to_float, pretty_space, pretty_time, KivyQueue,
-                          ConfigProperty)
+                          ConfigProperty, to_bool)
 from filers import config_name
 from ffpyplayer.player import MediaPlayer
 from ffpyplayer.pic import get_image_size
@@ -40,7 +40,13 @@ from ffpyplayer.tools import list_dshow_devices
 from ffpyplayer.writer import MediaWriter
 
 
-unicode_type = unicode if PY2 else str
+def unicode_type(val):
+    try:
+        return (unicode if PY2 else str)(val)
+    except UnicodeDecodeError:
+        return val.decode('utf8')
+    except UnicodeEncodeError:
+        return val.encode('utf8')
 '''
 Unicode type used to convert anything into unicode.
 '''
@@ -137,7 +143,7 @@ class Recorder(BoxLayout):
     size of the video (width, height).
     '''
 
-    real_ifmt = ''
+    real_ifmt = StringProperty('')
     ''' After a new input video has started playing, this holds the true frame
     format of the video (e.g. rgb24, yuv420p).
     '''
@@ -382,8 +388,8 @@ class Recorder(BoxLayout):
 
         def update_bps(*l):
             try:
-                if self.ipix_fmt and self.iwidth and self.iheight:
-                    rate = sum(get_image_size(self.ipix_fmt, self.iwidth,
+                if self.real_ifmt and self.iwidth and self.iheight:
+                    rate = sum(get_image_size(self.real_ifmt, self.iwidth,
                                               self.iheight)) * self.irate
                 else:
                     rate = 0.
@@ -392,7 +398,7 @@ class Recorder(BoxLayout):
             self.ibps = rate
 
             rate = self.orate if self.orate else self.irate
-            pix_fmt = self.opix_fmt if self.opix_fmt else self.ipix_fmt
+            pix_fmt = self.opix_fmt if self.opix_fmt else self.real_ifmt
             width = self.owidth if self.owidth else self.iwidth
             height = self.oheight if self.oheight else self.iheight
             try:
@@ -403,7 +409,7 @@ class Recorder(BoxLayout):
             except:
                 rate = 0.
             self.obps = rate
-        self.bind(ipix_fmt=update_bps, iwidth=update_bps,
+        self.bind(real_ifmt=update_bps, iwidth=update_bps,
                   iheight=update_bps, irate=update_bps, orate=update_bps,
                   opix_fmt=update_bps, owidth=update_bps, oheight=update_bps)
 
@@ -550,6 +556,8 @@ class Recorder(BoxLayout):
         res_opt = ''
 
         cam_list = list_dshow_devices()[0]
+        for cam, opts in cam_list.items():
+            cam_list[cam.decode('utf8')] = cam_list.pop(cam)
         cams = {}
         for cam, opts in cam_list.iteritems():
             cams[cam] = {}
@@ -700,10 +708,11 @@ class Recorder(BoxLayout):
             #                                         500 * 1024 ** 2)))
             #==================================================================
         try:
-            ifilename = self.ifilename
+            ifilename = self.ifilename.encode('utf8')
             ffplayer = self.ff_player = MediaPlayer(ifilename,
-                callback=WeakMethod(self._ff_callback), loglevel='warning',
-                ff_opts=ff_opts, lib_opts=lib_opts)
+                callback=WeakMethod(self._ff_callback), loglevel='info',
+                ff_opts=ff_opts,
+                lib_opts=lib_opts)
         except:
             logging.error('Recorder: Player failed:\n' +
                           traceback.format_exc())
@@ -746,7 +755,6 @@ class Recorder(BoxLayout):
         self.real_ifmt = img.get_pixel_format()
         self.running = True
         self.iwidth, self.iheight = self.isize
-        self.ipix_fmt = self.real_ifmt
         try:
             self.thread = Thread(target=self.process_thread,
                                  name='ff play/record')
