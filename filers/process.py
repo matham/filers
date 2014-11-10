@@ -295,6 +295,12 @@ class Processor(GridLayout):
     regex match. That formatted string is then used as the executed string.
     '''
 
+    pause_on_skip = ConfigProperty(5, 'pause_on_skip', int)
+    '''
+    If :attr:`pause_on_skip` files have been skipped, we'll pause. If -1, we
+    don't pause.
+    '''
+
     _last_update = 0.
     ''' The last time we received a file_stat queue packet or we updated the
     title. '''
@@ -464,7 +470,7 @@ class Processor(GridLayout):
             elif key == 'skipped':
                 self.error_log += '\n\n{}'.format(val)
                 self.skip_count += 1
-                if self.skip_count == 5:
+                if self.skip_count == self.pause_on_skip:
                     self.pause_wgt.state = 'down'
 
     def on_keyboard_down(self, keyboard, keycode, text, modifiers):

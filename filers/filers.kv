@@ -136,12 +136,12 @@
         font_size: max(self.height, 12)
         on_state:
             if self.state == 'down': self.state = root.count_start()
-            else: root.count_end()
+            if self.state == 'normal': root.count_end()
         background_color: root.blink_color
         background_down: ''
     BoxLayout:
         size_hint_y: None
-        height: '60dp'
+        height: min(60, self.parent.height)
         TextInput:
             input_filter: 'float'
             id: counter

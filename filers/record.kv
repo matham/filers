@@ -267,6 +267,7 @@
                 SLabel:
                     markup: True
                     halign: 'left'
+                    valign: 'top'
                     text: app.rec_wgt.stats_output_pretty
                 TextInput:
                     input_filter: 'int'
@@ -354,6 +355,7 @@
                 BoxLayout:
                     orientation: 'vertical'
                     SLabel:
+                        id: status_label
                         size_hint_y: None
                         on_width: self.text_size = (self.width, None)
                         on_texture_size:
@@ -366,6 +368,8 @@
                         padding_x: 30
                         font_size: '18dp'
                     CountDownTimer:
+                        size_hint_y: None
+                        height: max(0, self.parent.height - status_label.height)
                         spacing: 10
                         padding: [20]
             ToggleButton:

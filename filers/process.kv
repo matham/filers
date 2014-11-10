@@ -380,9 +380,10 @@
         size_hint_y: None
         height: sett.item_height
     ProcessStatus
-    SLabel:
+    Label:
+        text_size: self.width, None
         size_hint_y: None
-        height: sett.item_height
+        height: self.texture_size[1]
         halign: 'left'
         padding: [10, 4]
         text: app.proc_wgt.cmd
