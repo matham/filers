@@ -1,21 +1,13 @@
+#@PydevCodeAnalysisIgnore
 #:kivy 1.8
 #:import str_to_float filers.tools.str_to_float
 #:import pretty_time filers.tools.pretty_time
+#:import expanduser os.path.expanduser
 
 <SLabel@Label>:
     halign: 'center'
     valign: 'middle'
     text_size: self.size
-
-<Button>:
-    halign: 'center'
-    valign: 'middle'
-    text_size: self.size
-
-
-<TextInput>:
-    multiline: False
-    write_tab: False
 
 
 <RotatedLabel@SLabel>:
@@ -71,12 +63,6 @@
             rgba: 1, 1, 1, 1
 
 
-<ScrollView>:
-    bar_width: '9dp'
-    scroll_type: ['bars']
-    scroll_wheel_distance: 60
-
-
 <ScrollLabel@ScrollView>:
     text: ''
     text_height: label.height
@@ -95,32 +81,84 @@
 <RelativeStencil@RelativeLayout, StencilView>
 
 
-<PopupBrowser>:
+<CallbackPopup>:
     size_hint: (None, None)
     size: (min(self.parent.width, 800), min(self.parent.height, 600)) if self.parent else (100, 100)
-    on_open:
-        file_browser.path = app.last_src_path if self.target == 'src' else app.last_tgt_path
-    target: 'src'
-    on_dismiss:
-        self.dirselect = False
-        self.callback = None
-        self.multiselect = False
-        if self.target == 'src': app.last_src_path = file_browser.path
-        if self.target == 'dst': app.last_tgt_path = file_browser.path
+
+<PopupBrowser@CallbackPopup>:
+    target: expanduser('~')
     dirselect: False
     multiselect: False
     FileBrowser:
         id: file_browser
-        path: '/'
-        dirselect: True
+        dirselect: root.dirselect
         multiselect: root.multiselect
+        path: root.target or expanduser('~')
         on_success:
-            if root.callback: root.callback(self.path, self.selection)
-            if self.selection: root.dismiss()
+            if root.callback: root.callback(self.path, self.selection, self.filename)
+            if self.selection or self.filename: root.dismiss()
         on_submit:
-            if root.callback: root.callback(self.path, self.selection)
+            if root.callback: root.callback(self.path, self.selection, self.filename)
             root.dismiss()
         on_cancel_state: root.dismiss()
+
+
+<ErrorLabel@Label>:
+    size_hint_y: None
+    height: self.texture_size[1]
+    text_size: self.width, None
+    padding: '5dp', '5dp'
+    canvas.before:
+        Color:
+            rgba: .2, .2, .2, 1
+        Rectangle:
+            size: self.texture_size
+            pos: self.pos
+
+<ErrorLog@CallbackPopup>:
+    container: container
+    BoxLayout:
+        orientation: 'vertical'
+        padding: '15dp', '15dp'
+        spacing: '10dp', '10dp'
+        ScrollView:
+            bar_width: '15dp'
+            GridLayout:
+                id: container
+                padding: '15dp',
+                spacing: '15dp',
+                cols: 1
+                size_hint_y: None
+                height: self.minimum_height
+        FloatLayout:
+            size_hint_y: None
+            height: close.texture_size[1]
+            Button:
+                id: close
+                text: 'Close'
+                on_release: root.dismiss()
+                padding: '20dp', '10dp'
+                width: self.texture_size[0]
+                size_hint_x: None
+                pos_hint: {'right': 1}
+                y: self.parent.y
+
+<ErrorIndicator>:
+    on_release:
+        self.anim.cancel(self)
+        self.alpha = 1
+        self.seen = True
+        self.display.open()
+    down: 'media/ok_down.png' if self.seen else 'media/error_down.png'
+    normal: 'media/ok.png' if self.seen else 'media/error.png'
+    canvas:
+        Color:
+            rgb: 1, 1, 1
+            a: self.alpha
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: self.down if self.state == 'down' else self.normal
 
 
 <CountDownTimer>:
@@ -156,35 +194,31 @@
 <MainFrame>:
     panel: panel
     orientation: 'vertical'
-    SLabel:
-        size_hint_y: None
-        height: '40dp'
-        text: 'Filers v' + app.version + ', CPL lab'
     TabbedPanel:
         id: panel
         on_parent: app.tabbed_wgt = self
         do_default_tab: False
-        tab_pos: 'bottom_left'
-        tab_width: self.width / 11 * 2
-        active_wgt: app.rec_wgt if self.current_tab == record else (app.proc_wgt if self.current_tab == process else app.files_wgt)
+#        tab_pos: 'bottom_left'
+#        tab_width: self.width / 11 * 2
+#        active_wgt: app.rec_wgt if self.current_tab == record else (app.proc_wgt if self.current_tab == process else app.files_wgt)
         TabbedPanelItem:
             id: record
             text: 'Record'
-            Recorder
-        TabbedPanelItem:
-            id: process
-            text: 'Process'
-            Processor
-        TabbedPanelItem:
-            id: tools
-            text: 'File tools'
-            FileTools
-        TabbedPanelItem:
-            text: 'Help'
-            RstDocument:
-                source: app.help_source
-        TabbedPanelItem:
-            id: tools
-            text: 'Log'
-            ScrollLabel:
-                text: '\n'.join(app.filers_log)
+            PlayerRoot
+#         TabbedPanelItem:
+#             id: process
+#             text: 'Process'
+#             Processor
+#         TabbedPanelItem:
+#             id: tools
+#             text: 'File tools'
+#             FileTools
+#         TabbedPanelItem:
+#             text: 'Help'
+#             RstDocument:
+#                 source: app.help_source
+#         TabbedPanelItem:
+#             id: tools
+#             text: 'Log'
+#             ScrollLabel:
+#                 text: '\n'.join(app.filers_log)

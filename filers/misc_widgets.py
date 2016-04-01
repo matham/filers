@@ -1,10 +1,13 @@
+import time
+from functools import partial
 
-__all__ = ('PopupBrowser', 'CountDownTimer', 'BufferImage')
+from ffpyplayer.tools import get_best_pix_fmt
+from ffpyplayer.pic import SWScale
 
-
-from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty,\
-ListProperty, StringProperty, BooleanProperty, DictProperty, AliasProperty,\
-OptionProperty
+from kivy.properties import (
+    NumericProperty, ReferenceListProperty, ObjectProperty,
+    ListProperty, StringProperty, BooleanProperty, DictProperty, AliasProperty,
+    OptionProperty)
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scatter import Scatter
 from kivy.uix.popup import Popup
@@ -13,6 +16,19 @@ from kivy.graphics import Rectangle, BindTexture
 from kivy.graphics.transformation import Matrix
 from kivy.graphics.fbo import Fbo
 from kivy.uix.behaviors import DragBehavior
+from kivy.uix.widget import Widget
+from kivy.uix.behaviors.knspace import KNSpaceBehavior
+from kivy.uix.behaviors.togglebutton import ToggleButtonBehavior
+from kivy.uix.stencilview import StencilView
+from kivy.uix.image import Image
+from kivy.uix.behaviors.button import ButtonBehavior
+from kivy.uix.behaviors.focus import FocusBehavior
+from kivy.uix.relativelayout import RelativeLayout
+from kivy.uix.spinner import Spinner
+from kivy.core.window import Keyboard
+from kivy.animation import Sequence, Animation
+from kivy.uix.checkbox import CheckBox
+from kivy.factory import Factory
 try:
     from kivy.garden.filebrowser import FileBrowser
 except:
@@ -20,13 +36,18 @@ except:
     if 'SPHINX_DOC_INCLUDE' not in os.environ:
         raise
 from kivy.clock import Clock
-import time
+
+__all__ = ('PopupBrowser', 'CountDownTimer', 'BufferImage')
+
+keycodes_nums = {v: k for k, v in Keyboard.keycodes.items()}
 
 
-class PopupBrowser(DragBehavior, Popup):
+class CallbackPopup(DragBehavior, Popup):
     ''' A popup that contains the :class:`FileBrowser` class. It allows
     selection of files and folders.
     '''
+
+    parent = ObjectProperty(None, allownone=True, rebind=True)
 
     callback = ObjectProperty(None, allownone=True)
     ''' A function that gets called, if not `None`, when a file is selected
@@ -118,6 +139,49 @@ class CountDownTimer(BoxLayout):
             self.counter = self._start_count - diff
 
 
+class SilentCheckBox(CheckBox):
+
+    def on_touch_down(self, touch):
+        pass
+
+    def on_touch_move(self, touch):
+        pass
+
+    def on_touch_up(self, touch):
+        pass
+
+
+def get_spinner_opt(spinner, cls, **kwargs):
+    kwargs['background_normal'] = spinner.background_normal
+    kwargs['background_color'] = spinner.background_color
+    return cls(**kwargs)
+
+
+class ColoredSpinner(Spinner):
+
+    def __init__(self, **kwargs):
+        self.option_cls = partial(get_spinner_opt, self, self.option_cls)
+        super(ColoredSpinner, self).__init__(**kwargs)
+
+
+class EventFocusBehavior(FocusBehavior):
+
+    __events__ = ('on_keypress', )
+
+    keys = ListProperty(['spacebar', 'escape', 'enter'])
+
+    def keyboard_on_key_down(self, window, keycode, text, modifiers):
+        if super(EventFocusBehavior, self).keyboard_on_key_down(
+                window, keycode, text, modifiers):
+            return True
+        if keycode[1] in self.keys:
+            self.dispatch('on_keypress', keycode[1])
+            return True
+
+    def on_keypress(self, key):
+        pass
+
+
 class BufferImage(Scatter):
     ''' Class that displays an image and allows its manipulation using touch.
     It receives an ffpyplayer :py:class:`~ffpyplayer.pic.Image` object.
@@ -142,6 +206,10 @@ class BufferImage(Scatter):
     fmt = ''
     ''' The input format of the last image passed in. E.g. rgb24, yuv420p, etc.
     '''
+
+    sw_src_fmt = ''
+
+    swscale = None
 
     img = None
     ''' Holds the last input :py:class:`~ffpyplayer.pic.Image`.
@@ -191,17 +259,29 @@ class BufferImage(Scatter):
         '''
         if img is None:
             return
-        update = False
-        img_w, img_h = img.get_size()
+
         img_fmt = img.get_pixel_format()
+        img_w, img_h = img.get_size()
+
+        update = False
+        if self.iw != img_w or self.ih != img_h:
+            update = True
+
+        if img_fmt not in ('yuv420p', 'rgba', 'rgb24', 'gray'):
+            swscale = self.swscale
+            if img_fmt != self.sw_src_fmt or swscale is None or update:
+                ofmt = get_best_pix_fmt(
+                    img_fmt, ('yuv420p', 'rgba', 'rgb24', 'gray'))
+                self.swscale = swscale = SWScale(
+                    iw=img_w, ih=img_h, ifmt=img_fmt, ow=0, oh=0, ofmt=ofmt)
+                self.sw_src_fmt = img_fmt
+            img = swscale.scale(img)
+            img_fmt = img.get_pixel_format()
 
         w, h = self.parent.size
         if (not w) or not h:
             self.img = img
             return
-
-        if self.iw != img_w or self.ih != img_h:
-            update = True
 
         if self.fmt != img_fmt:
             self.fmt = img_fmt
@@ -247,8 +327,8 @@ class BufferImage(Scatter):
                 tex = self.img_texture = fbo.texture
                 fbo.add_reload_observer(self.reload_buffer)
             else:
-                tex = self.img_texture = Texture.create(size=(img_w, img_h),
-                                                        colorfmt=kivy_ofmt)
+                tex = self.img_texture = Texture.create(
+                    size=(img_w, img_h), colorfmt=kivy_ofmt)
                 tex.add_reload_observer(self.reload_buffer)
 
             tex.flip_vertical()
@@ -273,3 +353,37 @@ class BufferImage(Scatter):
         screen size changes or the last image need to be recalculated.
         '''
         self.update_img(self.img)
+
+
+class ErrorIndicator(ButtonBehavior, Widget):
+
+    display = None
+
+    seen = BooleanProperty(True)
+
+    alpha = NumericProperty(1.)
+
+    queue = ListProperty([])
+
+    anim = None
+
+    def __init__(self, **kw):
+        super(ErrorIndicator, self).__init__(**kw)
+        a = self.anim = Sequence(
+            Animation(t='in_bounce', alpha=1.),
+            Animation(t='out_bounce', alpha=0))
+        a.repeat = True
+        self.display = Factory.ErrorLog(title='Error Log')
+
+    def on_queue(self, *largs):
+        display = self.display
+        cls = Factory.ErrorLabel
+        display.container.clear_widgets()
+        add = display.container.add_widget
+        q = self.queue
+        for t in q:
+            add(cls(text=t))
+
+        if q and self.seen:
+            self.seen = False
+            self.anim.start(self)

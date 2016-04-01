@@ -1,408 +1,729 @@
+#@PydevCodeAnalysisIgnore
 #:kivy 1.8
 #:import Matrix kivy.graphics.transformation.Matrix
 #:import partial functools.partial
+#:import dirname os.path.dirname
 #:import formats_out ffpyplayer.tools.formats_out
 #:import formats_in ffpyplayer.tools.formats_in
 #:import pix_fmts ffpyplayer.tools.pix_fmts
 #:import codecs_dec ffpyplayer.tools.codecs_dec
 #:import codecs_enc ffpyplayer.tools.codecs_enc
 #:import pretty_space filers.tools.pretty_space
+#:import pretty_time filers.tools.pretty_time
+#:import RTVPlayer filers.record.RTVPlayer
 
 
-<RecordInput@BoxLayout>:
-    _nothing_here: setattr(app, 'rec_wgt', self.parent)
-    orientation: 'vertical'
+<FrameDispaly@KNSpaceBehavior+RelativeLayout>:
+    on_size: display.reload_buffer()
+    display: display
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 1
+    BufferImage:
+        id: display
+        size_hint: None, None
+        size: int(self.iw), int(self.ih)
+        auto_bring_to_front: False
+        do_rotation: False
+
+<SizedLabel@Label>:
+    padding_x: '10dp'
+    size_hint_x: None
+    width: self.texture_size[0]
+
+<ImageButton@ButtonBehavior+Image>
+<ImageToggleButton@ToggleButtonBehavior+Image>
+
+<KNLabel@KNSpaceBehavior+Label>
+<KNSizedLabel@KNSpaceBehavior+SizedLabel>
+
+<SizedTextInput@TextInput>:
     size_hint_y: None
-    height: '80dp'
-    canvas.before:
-        Color:
-            rgba: .2, .1, .0, 1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-        Color:
-            rgba: 1, 1, 1, 1
-        BorderImage:
-            border: (16, 16, 16, 16)
-            pos: self.pos
-            size: self.size
-            source: 'media/blue_border.png'
-        Color:
-            rgba: 1, 1, 1, 1
-    BoxLayout:
-        padding: [3, 3, 20, 3]
-        spacing: 5
-        orientaion: 'horizontal'
-        RotatedLabel:
-            size_hint_x: None
-            width: '20dp'
-            angle: 90
-            text: 'Input'
-        BoxLayout:
-            orientation: 'vertical'
-            BoxLayout:
-                spacing: 5
-                orientaion: 'horizontal'
-                Spinner:
-                    size_hint_x: 0.6
-                    id: icam
-                    disabled: play.state == 'down'
-                    on_press:
-                        self.values, iopts.values = app.rec_wgt.get_cam_list(self.text, iopts.text)
-                        iopts.has_changed = True
-                    text: app.rec_wgt.idshow_dev
-                    on_text: iopts.values = app.rec_wgt.set_cam(self.text, iopts.text)
-                    on_is_open: if not self.is_open: iopts.values = app.rec_wgt.set_cam(self.text, iopts.text)
-                Spinner:
-                    has_changed: False
-                    id: iopts
-                    text: app.rec_wgt.idshow_opt
-                    disabled: play.state == 'down'
-                    on_text:
-                        if self.has_changed: app.rec_wgt.set_cam_opts(icam.text, self.text)
-                    on_is_open: if not self.is_open: app.rec_wgt.set_cam_opts(icam.text, self.text)
-                TextInput:
-                    id: ifilename
-                    disabled: play.state == 'down'
-                    hint_text: 'Input filename'
-                    text: app.rec_wgt.ifilename
-                    on_text: app.rec_wgt.ifilename = self.text
-            BoxLayout:
-                id: iparams
-                padding: [0, 3]
-                spacing: 5
-                orientaion: 'horizontal'
-                Spinner:
-                    id: ifmt
-                    disabled: play.state == 'down'
-                    values: [''] + formats_in
-                    size_hint_x: None
-                    width: '100dp'
-                    text: app.rec_wgt.ifmt
-                    on_text: app.rec_wgt.ifmt = self.text
-                Spinner:
-                    id: icodec
-                    disabled: play.state == 'down'
-                    values: [''] + codecs_dec
-                    size_hint_x: None
-                    width: '120dp'
-                    text: app.rec_wgt.icodec
-                    on_text: app.rec_wgt.icodec = self.text
-                Spinner:
-                    id: ipix_fmt
-                    disabled: play.state == 'down'
-                    values: [''] + pix_fmts
-                    size_hint_x: None
-                    width: '140dp'
-                    text: app.rec_wgt.ipix_fmt
-                    on_text: app.rec_wgt.ipix_fmt = self.text
-                TextInput:
-                    input_filter: 'int'
-                    id: iwidth
-                    disabled: play.state == 'down'
-                    hint_text:  'Width'
-                    size_hint_x: None
-                    width: '80dp'
-                    text: str(app.rec_wgt.iwidth) if app.rec_wgt.iwidth else ''
-                    on_text: app.rec_wgt.iwidth = self.text
-                TextInput:
-                    input_filter: 'int'
-                    id: iheight
-                    disabled: play.state == 'down'
-                    hint_text:  'Height'
-                    size_hint_x: None
-                    width: '80dp'
-                    text: str(app.rec_wgt.iheight) if app.rec_wgt.iheight else ''
-                    on_text: app.rec_wgt.iheight = self.text
-                TextInput:
-                    input_filter: 'float'
-                    id: irate
-                    disabled: play.state == 'down'
-                    hint_text:  'Rate'
-                    size_hint_x: None
-                    width: '80dp'
-                    text: str(app.rec_wgt.irate) if app.rec_wgt.irate else ''
-                    on_text: app.rec_wgt.irate = self.text
-                SLabel:
-                    markup: True
-                    halign: 'left'
-                    text: app.rec_wgt.stats_input_pretty
-        ToggleButton:
-            id: play
-            size_hint_x: None
-            width: self.height
-            background_normal: 'media/play.png'
-            background_down: 'media/pause.png'
-            on_state:
-                if self.state == 'down': self.state = 'down' if app.rec_wgt.play(app.display_color) else 'normal'
-                if self.state == 'normal': app.rec_wgt.stop()
-                if self.state == 'normal': app.rec_wgt.record_btn_wgt.state = 'normal'
-                if self.state == 'normal': app.rec_wgt.frame_count = 0
-            on_parent: app.rec_wgt.play_btn_wgt = self
+    height: self.minimum_height
+    multiline: False
+    write_tab: False
 
+<KNSizedTextInput@KNSpaceBehavior+SizedTextInput>
+<KNSpinner@KNSpaceBehavior+ColoredSpinner>
+<KNButton@KNSpaceBehavior+Button>
+<KNToggleButton@KNSpaceBehavior+ToggleButton>
+<KNImageToggleButton@KNSpaceBehavior+ImageToggleButton>
 
-<RecordOutput@BoxLayout>:
-    orientation: 'vertical'
+<SizedScreenManager>:
+    current_screen_obj: self.current_screen
     size_hint_y: None
-    height: '80dp'
-    canvas.before:
-        Color:
-            rgba: .2, 0, .1, 1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-        Color:
-            rgba: 1, 1, 1, 1
-        BorderImage:
-            border: (16, 16, 16, 16)
-            pos: self.pos
-            size: self.size
-            source: 'media/blue_border.png'
-        Color:
-            rgba: 1, 1, 1, 1
-    BoxLayout:
-        padding: [3, 3, 20, 3]
-        spacing: 5
-        orientaion: 'horizontal'
-        RotatedLabel:
-            size_hint_x: None
-            width: '20dp'
-            angle: 90
-            text: 'Output'
-        BoxLayout:
-            orientation: 'vertical'
-            BoxLayout:
-                spacing: 5
-                orientaion: 'horizontal'
-                TextInput:
-                    id: odir
-                    hint_text: 'Output directory'
-                    on_text: app.rec_wgt.odir = self.text
-                    disabled: app.rec_wgt.recording
-                    text: app.rec_wgt.odir
-                    on_triple_tap:
-                        app.filebrowser.target = 'dst'
-                        app.filebrowser.dirselect = True
-                        app.filebrowser.open()
-                        app.filebrowser.callback = partial(app.assign_path, self)
-                TextInput:
-                    id: ofilename
-                    hint_text: 'Output filename'
-                    on_text: app.rec_wgt.ofilename = self.text
-                    disabled: app.rec_wgt.recording
-                    text: app.rec_wgt.ofilename
-                TextInput:
-                    input_filter: 'int'
-                    size_hint_x: None
-                    width: '40dp'
-                    id: oincrement
-                    hint_text: 'n'
-                    on_text: app.rec_wgt.oincrement = self.text
-                    disabled: app.rec_wgt.recording
-                    text: str(app.rec_wgt.oincrement)
-                TextInput:
-                    id: oext
-                    size_hint_x: None
-                    width: '80dp'
-                    hint_text: 'ext'
-                    on_text: app.rec_wgt.oext = self.text
-                    disabled: app.rec_wgt.recording
-                    text: app.rec_wgt.oext
-            BoxLayout:
-                id: iparams
-                padding: [0, 3]
-                spacing: 5
-                orientaion: 'horizontal'
-                Spinner:
-                    id: ofmt
-                    values: [''] + formats_out
-                    size_hint_x: None
-                    width: '70dp'
-                    on_text: app.rec_wgt.ofmt = self.text
-                    disabled: True
-                    text: app.rec_wgt.ofmt
-                Spinner:
-                    id: ocodec
-                    values: codecs_enc
-                    size_hint_x: None
-                    width: '100dp'
-                    on_text: app.rec_wgt.ocodec = self.text
-                    disabled: True
-                    text: app.rec_wgt.ocodec
-                Spinner:
-                    id: opix_fmt
-                    values: [''] + pix_fmts
-                    size_hint_x: None
-                    width: '140dp'
-                    on_text: app.rec_wgt.opix_fmt = self.text
-                    disabled: app.rec_wgt.recording
-                    text: app.rec_wgt.opix_fmt
-                TextInput:
-                    input_filter: 'int'
-                    id: owidth
-                    hint_text:  'Width'
-                    size_hint_x: None
-                    width: '60dp'
-                    on_text: app.rec_wgt.owidth = self.text
-                    disabled: True
-                    text: str(app.rec_wgt.owidth) if app.rec_wgt.owidth else ''
-                TextInput:
-                    input_filter: 'int'
-                    id: oheight
-                    hint_text:  'Height'
-                    size_hint_x: None
-                    width: '60dp'
-                    on_text: app.rec_wgt.oheight = self.text
-                    disabled: True
-                    text: str(app.rec_wgt.oheight) if app.rec_wgt.oheight else ''
-                TextInput:
-                    input_filter: 'float'
-                    id: orate
-                    hint_text:  'Rate'
-                    size_hint_x: None
-                    width: '60dp'
-                    on_text: app.rec_wgt.orate = self.text
-                    disabled: app.rec_wgt.recording
-                    text: str(app.rec_wgt.orate) if app.rec_wgt.orate else ''
-                SLabel:
-                    markup: True
-                    halign: 'left'
-                    valign: 'top'
-                    text: app.rec_wgt.stats_output_pretty
-                TextInput:
-                    input_filter: 'int'
-                    id: est_sec
-                    hint_text:  'Sec'
-                    size_hint_x: None
-                    width: '60dp'
-                TextInput:
-                    input_filter: 'int'
-                    id: est_count
-                    hint_text:  'Count'
-                    size_hint_x: None
-                    width: '40dp'
-                SLabel:
-                    size_hint_x: None
-                    width: max(self.texture_size[0], 120)
-                    max_lines: 1
-                    on_size: self.text_size = (None, None)
-                    markup: True
-                    halign: 'left'
-                    text: app.rec_wgt.get_estimated_size(est_sec.text, est_count.text, app.rec_wgt.obps)
+    height: self.current_screen_obj.height if self.current_screen_obj else 0
 
-<CPUBar@BoxLayout>:
-    orientation: 'vertical'
+<KNSizedScreenManager@KNSpaceBehavior+SizedScreenManager>
+
+<LabeledCheck@KNSpaceBehavior+ToggleButtonBehavior+GridLayout>:
+    rows: 1
+    size_hint_x: None
+    width: self.minimum_width
     text: ''
-    used_color: 1, .3, 0
-    free_color: 0, .55, .6
-    shrink: 10
-    percent_free: 0
-    SLabel:
+    always_release: True
+    allow_no_selection: False
+    SilentCheckBox:
+        id: checkbox
+        always_release: True
+        allow_no_selection: False
+        size_hint_x: None
+        width: '34sp'
+        state: root.state
+        group: (root.group + 'A') if root.group else ''
+    SizedLabel:
         text: root.text
-        size_hint_y: None
-        height: '60dp'
-        valign: 'bottom'
-    Widget:
-        canvas:
-            Color:
-                rgb: root.used_color
-            Rectangle:
-                pos: self.x + root.shrink, self.y
-                size: self.width - 2 * root.shrink, self.height * (1. - root.percent_free)
-            Color:
-                rgb: root.free_color
-            Rectangle:
-                pos: self.x + root.shrink, self. y + self.height * (1. - root.percent_free)
-                size: self.width - 2 * root.shrink, self.height * root.percent_free
 
-<PerformanceStats@BoxLayout>:
-    orientation: 'horizontal'
+<BorderedGridLayout@GridLayout>:
+    rgba: (0, 0, 0, 1)
     canvas.before:
         Color:
-            rgba: [0.25, 0.26, 0.54, 0.4]
+            rgba: self.rgba
         Rectangle:
             pos: self.pos
             size: self.size
         Color:
             rgba: 1, 1, 1, 1
-    CPUBar:
-        text: 'Disk\n' + pretty_space(app.rec_wgt.free_space)
-        percent_free: app.rec_wgt.free_space / float(app.rec_wgt.total_space)
-    CPUBar:
-        text: 'CPU\n{:.0f}%'.format(app.rec_wgt.cpu_percent * 100)
-        percent_free: 1 - app.rec_wgt.cpu_percent
-    CPUBar:
-        text: 'RAM\n{} ({:.0f}%)'.format(pretty_space(app.rec_wgt.free_ram), app.rec_wgt.free_ram / float(app.rec_wgt.total_ram) * 100)
-        percent_free: app.rec_wgt.free_ram / float(app.rec_wgt.total_ram)
+        BorderImage:
+            border: (16, 16, 16, 16)
+            pos: self.pos
+            size: self.size
+            source: 'media/blue_border.png'
+        Color:
+            rgba: 1, 1, 1, 1
 
-<Recorder>:
-    orientation: 'vertical'
-    RecordInput
-    RecordOutput
-    BoxLayout:
-        id: lower_container
-        orientation: 'horizontal'
-        BoxLayout:
-            padding: [10]
-            spacing: 10
-            orientation: 'vertical'
-            BoxLayout:
-                orientation: 'horizontal'
-                PerformanceStats:
-                    id: perfm
+<GridStencil@StencilView+GridLayout>
+
+<PlayerView>:
+    knspace: 'fork'
+    padding: '15dp',
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 1
+        BorderImage:
+            border: (16, 16, 16, 16)
+            pos: self.pos
+            size: self.size
+            source: 'media/blue_border.png'
+    GridStencil:
+        cols: 1
+        spacing: '5dp',
+        GridLayout:
+            id: stats
+            rows: 1
+            size_hint: None, None
+            width: self.minimum_width
+            height: '80dp'
+            padding: ['15dp']
+            spacing: ['10dp']
+            Label:
+                padding: '15dp', '15dp'
+                text: root.player.cls
+                size_hint_x: None
+                width: self.texture_size[1]
+            ImageButton:
+                size_hint_x: None
+                width: self.height
+                source: 'media/settings.png' if self.state == 'normal' else 'media/settings_down.png'
+                on_release: root.players.show_settings(root.player)
+            Widget:
+                size_hint_x: None
+                width: self.height
+                canvas:
+                    Color:
+                        rgb: (1, 0, 0) if root.disk_used_percent >= .75 else (0, 1, 0)
+                    Ellipse:
+                        pos: self.pos
+                        size: self.size
+                        angle_end: root.disk_used_percent * 360.
+                    Line:
+                        circle: self.center_x, self.center_y, self.height / 2.
+            Label:
+                padding: '15dp', '15dp'
+                text: root.disk_stat
+                size_hint: None, None
+                size: self.texture_size
+                markup: True
+            KNToggleButton:
+                size_hint_x: None
+                width: self.height
+                knsname: 'play'
+                background_normal: 'media/play.png'
+                background_down: 'media/pause.png'
+                background_disabled_normal: 'media/play.png'
+                background_disabled_down: 'media/pause.png'
+                disabled: not root.player or not not root.player.config_active
+                background_color: [.2, .2, .2, 1] if self.disabled else [1, 1, 1, 1]
+                on_release: root.player.play() if self.state == 'down' else root.player.stop()
+        GridLayout:
+            size_hint_y: None
+            height: self.minimum_height
+            spacing: 5
+            orientaion: 'horizontal'
+            rows: 1
+            ImageButton:
+                size_hint_x: None
+                width: self.height
+                source: 'media/browse.png' if self.state == 'normal' else 'media/browse_down.png'
+                on_release:
+                    app.filebrowser.target = path_dir.text
+                    app.filebrowser.dirselect = True
+                    app.filebrowser.multiselect = False
+                    app.filebrowser.callback = partial(app.assign_path, path_dir)
+                    app.filebrowser.open()
+            KNSizedTextInput:
+                id: path_dir
+                hint_text: 'Directory'
+                knsname: 'path_dir'
+            KNSizedTextInput:
+                hint_text: 'Filename'
+                id: path_fname
+                knsname: 'path_fname'
+                fmt_text: ''
+                orig_text: ''
+                on_focus: root.handle_fname(path_fname, path_count)
+            KNSizedTextInput:
+                id: path_count
+                knsname: 'path_count'
+                input_filter: 'int'
+                size_hint_x: None
+                width: '40dp'
+                hint_text: 'n'
+                on_text: root.handle_fname(path_fname, path_count, 'count')
+        FrameDispaly:
+            knsname: 'display'
+            id: display
+            GridLayout:
+                rows: 1
+                size_hint: None, None
+                size: self.minimum_size
+                right: self.size and (display.width - 20)
+                top: self.size and (display.height - 20)
+                spacing: ['20dp']
+                KNImageToggleButton:
+                    id: record
+                    knsname: 'record'
                     size_hint_x: None
-                    width: '200dp'
-                BoxLayout:
-                    orientation: 'vertical'
-                    SLabel:
-                        id: status_label
-                        size_hint_y: None
-                        on_width: self.text_size = (self.width, None)
-                        on_texture_size:
-                            self.texture_size = self.texture_size[0], min(self.parent.height, self.texture_size[1])
-                        height: min(self.parent.height, self.texture_size[1])
+                    width: self.height
+                    source: 'media/record.png' if self.state == 'normal' else 'media/record_down.png'
+                    on_release: root.player.record() if self.state == 'down' else root.player.stop_recording()
+                ImageButton:
+                    size_hint_x: None
+                    width: self.height
+                    source: 'media/screenshot.png' if self.state == 'normal' else 'media/screenshot_down.png'
+                    on_release:
+                        app.filebrowser.target = path_dir.text
+                        app.filebrowser.dirselect = False
+                        app.filebrowser.multiselect = False
+                        app.filebrowser.callback = root.player.save_screenshot
+                        app.filebrowser.ids.file_browser.ids.file_text.text = path_fname.fmt_text.split('.')[0] + '.png'
+                        app.filebrowser.open()
+                Widget:
+                    size_hint: None, None
+                    height: elapsed_record.texture_size[1]
+                    width: max(self.width, elapsed_record.texture_size[0])
+                    Label:
+                        size: self.parent.size
+                        id: elapsed_record
+                        knsname: 'elapsed_record'
+                        padding: '15dp', '15dp'
+                        text: root.elapsed_recording
+                        pos: self.parent.pos
                         markup: True
-                        text: app.rec_wgt.stats_pretty
-                        halign: 'left'
-                        valign: 'top'
-                        padding_x: 30
-                        font_size: '18dp'
-                    CountDownTimer:
-                        size_hint_y: None
-                        height: max(0, self.parent.height - status_label.height)
-                        spacing: 10
-                        padding: [20]
-            ToggleButton:
-                on_size:
-                    self.text_size = (None, None)
-                on_parent: app.rec_wgt.record_btn_wgt = self
-                size_hint_y: 0.5
-                text: 'Record' if self.state == 'normal' else app.rec_wgt.oelapsed_pretty
-                on_texture_size:
-                    non_zero = self.texture_size[0] and self.texture_size[1]
-                    if non_zero: scale = min(self.width / float(self.texture_size[0]), self.height / float(self.texture_size[1]))
-                    if non_zero: self.texture_size = self.texture_size[0] * scale, self.texture_size[1] * scale
-                font_size: max(self.height, 12)
-                on_state:
-                    app.rec_wgt.recording = self.state == 'down'
-                    app.set_tittle()
-                    app.rec_wgt.record_count = 0
-                    if self.state == 'down': self.state = 'down' if app.rec_wgt.record_start() else 'normal'
-                    if self.state == 'normal': app.rec_wgt.record_end()
-        Splitter:
+
+
+<PlayerRoot>:
+    knspace: 'fork'
+    knsname: 'play_root'
+    orientation: 'vertical'
+    error_output: error_output
+    BoxLayout:
+        orientation: 'horizontal'
+        ScrollView:
+            scroll_type: ['bars']
+            bar_width: '15dp'
+            on_size:
+                outer_splitter.height = max(outer_splitter.height, self.height)
+                inner_splitter.width = max(inner_splitter.width, self.width)
+            Splitter:
+                id: outer_splitter
+                sizable_from: 'bottom'
+                size_hint: None, None
+                min_size: container.minimum_height
+                width: inner_splitter.width
+                padding: [0, 0, 0, 20]
+                max_size: '10000dp'
+                Splitter:
+                    id: inner_splitter
+                    sizable_from: 'right'
+                    size_hint_x: None
+                    min_size: container.minimum_width
+                    max_size: '10000dp'
+                    padding: [0, 0, 20, 0]
+                    GridLayout:
+                        id: container
+                        spacing: '4dp'
+                        rows: int(n_rows.text)
+        ScrollView:
+            do_scroll: False, True
+            scroll_type: ['bars']
+            bar_width: '15dp'
+            size_hint_x: None
+            width: bar.width
+            GridLayout:
+                id: bar
+                cols: 1
+                size_hint: None, None
+                size: self.minimum_size
+                spacing: ['15dp']
+                ImageButton:
+                    size_hint_y: None
+                    height: self.width
+                    source: 'media/browse.png' if self.state == 'normal' else 'media/browse_down.png'
+                    on_release:
+                        app.filebrowser.target = dirname(root.players.settings_path)
+                        app.filebrowser.dirselect = False
+                        app.filebrowser.multiselect = False
+                        app.filebrowser.callback = partial(root.players.ui_config, True)
+                        app.filebrowser.open()
+                ImageButton:
+                    size_hint_y: None
+                    height: self.width
+                    source: 'media/save.png' if self.state == 'normal' else 'media/save_down.png'
+                    on_release:
+                        app.filebrowser.target = dirname(root.players.settings_path)
+                        app.filebrowser.dirselect = False
+                        app.filebrowser.multiselect = False
+                        app.filebrowser.callback = partial(root.players.ui_config, False)
+                        app.filebrowser.open()
+                ImageButton:
+                    size_hint_y: None
+                    height: self.width
+                    source: 'media/add.png' if self.state == 'normal' else 'media/add_down.png'
+                    on_release: root.players.add_player()
+                ErrorIndicator:
+                    id: error_output
+                    size_hint_y: None
+                    height: self.width
+                RelativeLayout:
+                    size_hint: None, None
+                    height: self.width
+                    width: '70dp'
+                    true_width: int(self.width / (1 + 24 / 64.))
+                    ImageButton:
+                        id: expand_hori
+                        size_hint: None, None
+                        width: self.parent.true_width
+                        height: int(24 / 64. * self.width)
+                        source: 'media/expand_hori.png' if self.state == 'normal' else 'media/expand_hori_down.png'
+                        on_release: inner_splitter.width += 100
+                    ImageButton:
+                        size_hint: None, None
+                        height: self.parent.true_width
+                        width: int(24 / 64. * self.height)
+                        pos_hint: {'top': 1., 'right': 1.}
+                        source: 'media/expand_vert.png' if self.state == 'normal' else 'media/expand_vert_down.png'
+                        on_release: outer_splitter.height += 100
+                    KNSpinner:
+                        id: n_rows
+                        knsname: 'n_rows'
+                        text: '2'
+                        on_text: root.players.cam_grid_rows = int(self.text)
+                        padding: '20dp', '12dp'
+                        values: map(str, range(1, 11))
+                        size_hint: None, None
+                        width: min(self.parent.width - expand_hori.height, self.texture_size[0])
+                        height: min(self.parent.height - expand_hori.height, self.texture_size[1])
+                        pos_hint: {'top': 1}
+
+
+<VideoScreenSelect@LabeledCheck>:
+    on_release: self.knspace.popup.players.replace_player_cls(self.knspace.popup.player, self.text)
+    group: 'video_source'
+
+<PixelSizeSelect@BorderedGridLayout>:
+    name: ''
+    rgba: 0.196, 0.196, 0.31, 1
+    rows: 1
+    padding: '10dp'
+    spacing: '10dp', '10dp'
+    size_hint: None, None
+    size: self.minimum_size
+    SizedLabel:
+        text: 'Pixel format:'
+    KNSpinner:
+        knsname: root.name + '_pix_fmt'
+        values: [''] + pix_fmts
+        size_hint_x: None
+        width: '140dp'
+        background_normal: ''
+        background_color: .443, .361, .251, 1
+        on_text: if self.knspace.popup and self.knspace.popup.player: self.knspace.popup.player.compute_preview_stats()
+    Widget
+        size_hint_x: None
+        width: '10dp'
+    SizedLabel:
+        text: 'Size:'
+    KNSizedTextInput:
+        knsname: root.name + '_w'
+        size_hint_x: None
+        width: '60dp'
+        input_filter: 'int'
+        on_text: if self.knspace.popup and self.knspace.popup.player: self.knspace.popup.player.compute_preview_stats()
+    SizedLabel:
+        text: 'X'
+    KNSizedTextInput:
+        knsname: root.name + '_h'
+        size_hint_x: None
+        width: '60dp'
+        input_filter: 'int'
+        on_text: if self.knspace.popup and self.knspace.popup.player: self.knspace.popup.player.compute_preview_stats()
+
+<FFmpegSettingsScreen@KNSpaceBehavior+Screen>:
+    name: 'FFmpeg'
+    size_hint: None, None
+    size: ffmpeg_screen.minimum_size
+    GridLayout:
+        id: ffmpeg_screen
+        cols: 1
+        spacing: '5dp'
+        BorderedGridLayout:
+            rgba: .2, 0, .1, 1
+            rows: 1
+            padding: '5dp', '5dp'
+            height: self.minimum_height
+            size_hint_y: None
+            SizedLabel:
+                text: 'Filename:'
+            KNSizedTextInput:
+                id: filename
+                knsname: 'filename'
+        BoxLayout:
+            size_hint_y: None
+            height: '40dp'
+            Widget
+            LabeledCheck:
+                id: webcam_check
+                knsname: 'webcam_fmt'
+                group: 'video_fmt'
+                text: 'Webcam'
+                on_state: video_fmt.current = 'dshow' if self.state == 'down' else 'other'
+            LabeledCheck:
+                knsname: 'other_fmt'
+                group: 'video_fmt'
+                text: 'Other'
+            Widget
+        KNSizedScreenManager:
+            id: video_fmt
+            knsname: 'video_fmt'
             canvas.before:
                 Color:
-                    rgb: [0, 0, 0]
+                    rgba: .2, 0, .1, 1
                 Rectangle:
                     pos: self.pos
                     size: self.size
                 Color:
                     rgba: 1, 1, 1, 1
-            max_size: max(lower_container.width - perfm.width, 0)
-            RelativeStencil:
-                on_size: img_buff.reload_buffer()
-                BufferImage:
-                    id: img_buff
+                BorderImage:
+                    border: (16, 16, 16, 16)
+                    pos: self.pos
+                    size: self.size
+                    source: 'media/blue_border.png'
+                Color:
+                    rgba: 1, 1, 1, 1
+            Screen:
+                size_hint_y: None
+                name: 'dshow'
+                height: dshow_screen.height
+                on_manager: play_file_fmt.text = 'dshow'
+                GridLayout:
+                    id: dshow_screen
+                    cols: 1
+                    size_hint_y: None
+                    height: self.minimum_height
+                    padding: '30dp', '10dp'
+                    spacing: '10dp', '10dp'
+                    BoxLayout:
+                        spacing: '10dp', '10dp'
+                        size_hint_y: None
+                        height: '40dp'
+                        orientation: 'horizontal'
+                        ImageButton:
+                            size_hint_x: None
+                            width: self.height
+                            source: 'media/refresh.png' if self.state == 'normal' else 'media/refresh_down.png'
+                            on_release: root.knspace.popup.player.refresh_dshow(dshow_cams, dshow_opts)
+                        KNSpinner:
+                            id: dshow_cams
+                            knsname: 'dshow_cams'
+                            background_normal: ''
+                            background_color: .45, .13, .17, 1
+                            on_text:
+                                filename.text = self.text
+                                if root.knspace.popup and root.knspace.popup.player: root.knspace.popup.player.update_dshow_opt(dshow_cams, dshow_opts)
+
+                    KNSpinner:
+                        id: dshow_opts
+                        knsname: 'dshow_opts'
+                        size_hint_y: None
+                        height: '40dp'
+                        background_normal: ''
+                        background_color: .45, .13, .17, 1
+            Screen:
+                size_hint_y: None
+                name: 'other'
+                height: '60dp'
+                GridLayout:
+                    rows: 1
+                    padding: '10dp'
+                    spacing: '10dp', '10dp'
+                    Widget
+                    SizedLabel:
+                        text: 'Format'
+                    KNSpinner:
+                        id: play_file_fmt
+                        knsname: 'play_file_fmt'
+                        values: [''] + formats_in
+                        size_hint_x: None
+                        width: '100dp'
+                        background_normal: ''
+                        background_color: .45, .13, .17, 1
+                    SizedLabel:
+                        text: 'Codec'
+                    KNSpinner:
+                        knsname: 'play_codec'
+                        values: [''] + codecs_dec
+                        size_hint_x: None
+                        width: '120dp'
+                        background_normal: ''
+                        background_color: .45, .13, .17, 1
+                    Widget
+        Label:
+            text: 'Display options'
+            size_hint_y: None
+            height: '40dp'
+        PixelSizeSelect:
+            name: 'play'
+
+<RTVSettingsScreen@KNSpaceBehavior+Screen>:
+    name: 'RTV'
+    size_hint_y: None
+    height: rtv_screen.minimum_height
+    GridLayout:
+        id: rtv_screen
+        cols: 1
+        spacing: '5dp'
+        BorderedGridLayout:
+            rgba: .2, 0, .1, 1
+            cols: 2
+            padding: '50dp', '10dp'
+            size_hint_y: None
+            height: self.minimum_height
+            SizedLabel:
+                text: 'Port:'
+            KNSizedTextInput:
+                knsname: 'rtv_port'
+            SizedLabel:
+                text: 'Computer:'
+            KNSizedTextInput:
+                knsname: 'rtv_remote_name'
+            SizedLabel:
+                text: 'Pipe:'
+            KNSizedTextInput:
+                knsname: 'rtv_pipe_name'
+        BorderedGridLayout:
+            rgba: .2, 0, .1, 1
+            rows: 1
+            padding: '30dp', '10dp'
+            size_hint_y: None
+            height: self.minimum_height
+            Widget
+            SizedLabel:
+                text: 'Image:'
+            KNSpinner:
+                size_hint: None, None
+                size: self.texture_size
+                id: rtv_pix_fmt
+                knsname: 'rtv_pix_fmt'
+                values: ['gray', 'rgb24']
+                padding: '25dp', '5dp'
+                background_normal: ''
+                background_color: .45, .13, .17, 1
+            Widget
+            SizedLabel:
+                text: 'Size:'
+            KNSpinner:
+                size_hint: None, None
+                size: self.texture_size
+                padding: '25dp', '5dp'
+                knsname: 'rtv_vid_fmt'
+                values:['{} ({}, {})'.format(name, w, h) for (name, (w, h)) in sorted(RTVPlayer.video_fmts.items(), key=lambda x: x[1][0] * x[1][1])]
+                background_normal: ''
+                background_color: .45, .13, .17, 1
+            Widget
+
+<PTGraySettingsScreen@KNSpaceBehavior+Screen>:
+    name: 'PTGray'
+    size_hint_y: None
+    height: pt_screen.minimum_height
+    GridLayout:
+        id: pt_screen
+        cols: 1
+        spacing: '5dp'
+        BorderedGridLayout:
+            rgba: .2, 0, .1, 1
+            rows: 1
+            padding: '50dp', '10dp'
+            spacing: ['20dp']
+            size_hint_y: None
+            height: '70dp'
+            disabled: not root.knspace.popup or not root.knspace.popup.player or not not root.knspace.popup.player.config_active
+            ImageButton:
+                size_hint_x: None
+                width: self.height
+                source: 'media/settings.png' if self.state == 'normal' else 'media/settings_down.png'
+                on_release: root.knspace.popup.player.ask_config('gui')
+            ImageButton:
+                size_hint_x: None
+                width: self.height
+                source: 'media/refresh.png' if self.state == 'normal' else 'media/refresh_down.png'
+                on_release: root.knspace.popup.player.ask_config('serials')
+            KNSpinner:
+                knsname: 'pt_serial'
+                on_text: if root.knspace.popup: root.knspace.popup.player.serial = self.text
+                background_normal: ''
+                background_color: .45, .13, .17, 1
+
+
+<PlayerSettings>:
+    parent_obj: self.parent
+    parent_width: root.parent_obj.width if root.parent_obj else 100
+    parent_height: root.parent_obj.height if root.parent_obj else 100
+    knspace: 'fork'
+    knsname: 'popup'
+    title: 'Player settings'
+    auto_dismiss: False
+    size_hint: None, None
+    width: inner_splitter.width + 25
+    height: outer_splitter.height + 100
+    Splitter:
+        id: outer_splitter
+        sizable_from: 'bottom'
+        size_hint: None, None
+        width: inner_splitter.width
+        height: min(grid_cont.minimum_height + 150, max(root.parent_height - 100, 0))
+        max_size: max(0, root.parent_height - 100)
+        Splitter:
+            id: inner_splitter
+            sizable_from: 'right'
+            width: min(grid_cont.minimum_width + 100, max(root.parent_width - 50, 0))
+            max_size: max(0, root.parent_width - 75)
+            ScrollView:
+                scroll_type: ['bars']
+                bar_width: '15dp'
+                GridLayout:
+                    id: grid_cont
                     size_hint: None, None
-                    size: int(self.iw), int(self.ih)
-                    on_parent: app.rec_wgt.play_image_wgt = self
+                    size: max(self.minimum_width + 100, self.parent.width), self.minimum_height
+                    rows: 1
+                    spacing: '15dp'
+                    padding: ['20dp', 0]
+                    GridLayout:
+                        id: settings_grid
+                        cols: 1
+                        size_hint: None, None
+                        size: self.minimum_size
+                        spacing: '15dp'
+                        padding: '15dp'
+                        GridLayout:
+                            rows: 1
+                            size_hint_y: None
+                            height: '50dp'
+                            padding: [0, '2dp']
+                            Widget
+                            VideoScreenSelect:
+                                id: FFmpeg
+                                text: 'FFmpeg'
+                            VideoScreenSelect:
+                                id: RTV
+                                text: 'RTV'
+                            VideoScreenSelect:
+                                id: PTGray
+                                text: 'PTGray'
+                            KNToggleButton:
+                                size_hint_x: None
+                                width: self.height
+                                knsname: 'play'
+                                id: play
+                                background_normal: 'media/play.png'
+                                background_down: 'media/pause.png'
+                                background_disabled_normal: 'media/play.png'
+                                background_disabled_down: 'media/pause.png'
+                                disabled: not root.player or not not root.player.config_active
+                                background_color: [.2, .2, .2, 1] if self.disabled else [1, 1, 1, 1]
+                                on_release: root.player.play() if self.state == 'down' else root.player.stop()
+                            Widget
+                        KNSizedScreenManager:
+                            knsname: 'source_type'
+                            FFmpegSettingsScreen
+                            RTVSettingsScreen
+                            PTGraySettingsScreen
+                        Label:
+                            text: 'Recording options'
+                            size_hint_y: None
+                            height: '40dp'
+                        GridLayout:
+                            cols: 1
+                            size_hint: None, None
+                            size: self.minimum_size
+                            PixelSizeSelect:
+                                name: 'record'
+                            BorderedGridLayout:
+                                rgba: 0.196, 0.196, 0.31, 1
+                                rows: 1
+                                padding: '10dp'
+                                spacing: '10dp', '10dp'
+                                size_hint_y: None
+                                height: self.minimum_height
+                                Widget
+                                SizedLabel:
+                                    text: 'Frame rate:'
+                                KNSizedTextInput:
+                                    knsname: 'record_rate'
+                                    size_hint_x: None
+                                    width: '60dp'
+                                    input_filter: 'float'
+                                    on_text: if root.player: root.player.compute_preview_stats()
+                                SizedLabel:
+                                    text: 'Drive Letter'
+                                KNSizedTextInput:
+                                    knsname: 'record_drive'
+                                    size_hint_x: None
+                                    width: '30dp'
+                                    on_text: if root.player: root.player.compute_preview_stats()
+                                Widget
+                            Label:
+                                size_hint_y: None
+                                height: '50dp'
+                                markup: True
+                                text: root.player.preview_stats if root.player else ''
+                        BoxLayout:
+                            size_hint_y: None
+                            height: '45dp'
+                            Widget
+                            Button:
+                                padding: '20dp', 0
+                                size_hint_x: None
+                                width: self.texture_size[0]
+                                text: 'Delete'
+                                on_release: root.players.delete_player(root.player)
+                            Button:
+                                padding: '20dp', 0
+                                size_hint_x: None
+                                width: self.texture_size[0]
+                                text: 'Close'
+                                on_release: root.players.hide_settings(root.player)
+                            Widget:
+                                size_hint_x: .1
+                    FrameDispaly
+                        knsname: 'display'

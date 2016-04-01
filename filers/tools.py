@@ -1,9 +1,6 @@
 ''' A module that provides common tools.
 '''
 
-__all__ = ('KivyQueue', 'pretty_time', 'pretty_space', 'str_to_float',
-           'hashfile', 'to_bool', 'ConfigProperty')
-
 try:
     import Queue as queue
     from Queue import Queue
@@ -11,6 +8,9 @@ except:
     import queue
     from queue import Queue
 from kivy.properties import ConfigParserProperty
+
+__all__ = ('KivyQueue', 'pretty_time', 'pretty_space', 'str_to_float',
+           'hashfile', 'to_bool', 'ConfigProperty')
 
 
 class KivyQueue(Queue):
@@ -188,4 +188,4 @@ def ConfigProperty(val, name, val_type, section, config_name):
         A :py:class:`~kivy.properties.ConfigParserProperty` instance.
     '''
     return ConfigParserProperty(val, section, name, config_name,
-                                 val_type=val_type, errorvalue=val)
+                                val_type=val_type, errorvalue=val)
