@@ -60,6 +60,10 @@ build_script:
 
     Check-Error
 
+    garden install filebrowser --kivy
+
+    Check-Error
+
     $env:KIVY_DOC_INCLUDE = 1
 
     python -m PyInstaller packaging/filers.spec
