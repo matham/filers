@@ -68,6 +68,8 @@ build_script:
 
     python -m PyInstaller packaging/filers.spec
 
+    mkdir deploy
+
     cd dist
 
     7z a "..\deploy\filers.7z" filers
@@ -92,7 +94,7 @@ build_script:
 
     Check-Error
 
-    mkdir deploy
+    cd ..
 
     Check-Error
 

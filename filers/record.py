@@ -822,7 +822,8 @@ class FFmpegPlayer(Player):
         # reset
         cams_wid.text = ''
         cams_wid.values = values
-        cams_wid.text = values[0]
+        if values:
+            cams_wid.text = values[0]
 
         if old_name in names2:
             cams_wid.text = old_name
