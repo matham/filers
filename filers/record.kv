@@ -11,88 +11,8 @@
 #:import pretty_space filers.tools.pretty_space
 #:import pretty_time filers.tools.pretty_time
 #:import RTVPlayer filers.record.RTVPlayer
+#:import Players filers.record.Players
 
-
-<FrameDispaly@KNSpaceBehavior+RelativeLayout>:
-    on_size: display.reload_buffer()
-    display: display
-    canvas:
-        Color:
-            rgba: 1, 1, 1, 1
-    BufferImage:
-        id: display
-        size_hint: None, None
-        size: int(self.iw), int(self.ih)
-        auto_bring_to_front: False
-        do_rotation: False
-
-<SizedLabel@Label>:
-    padding_x: '10dp'
-    size_hint_x: None
-    width: self.texture_size[0]
-
-<ImageButton@ButtonBehavior+Image>
-<ImageToggleButton@ToggleButtonBehavior+Image>
-
-<KNLabel@KNSpaceBehavior+Label>
-<KNSizedLabel@KNSpaceBehavior+SizedLabel>
-
-<SizedTextInput@TextInput>:
-    size_hint_y: None
-    height: self.minimum_height
-    multiline: False
-    write_tab: False
-
-<KNSizedTextInput@KNSpaceBehavior+SizedTextInput>
-<KNSpinner@KNSpaceBehavior+ColoredSpinner>
-<KNButton@KNSpaceBehavior+Button>
-<KNToggleButton@KNSpaceBehavior+ToggleButton>
-<KNImageToggleButton@KNSpaceBehavior+ImageToggleButton>
-
-<SizedScreenManager>:
-    current_screen_obj: self.current_screen
-    size_hint_y: None
-    height: self.current_screen_obj.height if self.current_screen_obj else 0
-
-<KNSizedScreenManager@KNSpaceBehavior+SizedScreenManager>
-
-<LabeledCheck@KNSpaceBehavior+ToggleButtonBehavior+GridLayout>:
-    rows: 1
-    size_hint_x: None
-    width: self.minimum_width
-    text: ''
-    always_release: True
-    allow_no_selection: False
-    SilentCheckBox:
-        id: checkbox
-        always_release: True
-        allow_no_selection: False
-        size_hint_x: None
-        width: '34sp'
-        state: root.state
-        group: (root.group + 'A') if root.group else ''
-    SizedLabel:
-        text: root.text
-
-<BorderedGridLayout@GridLayout>:
-    rgba: (0, 0, 0, 1)
-    canvas.before:
-        Color:
-            rgba: self.rgba
-        Rectangle:
-            pos: self.pos
-            size: self.size
-        Color:
-            rgba: 1, 1, 1, 1
-        BorderImage:
-            border: (16, 16, 16, 16)
-            pos: self.pos
-            size: self.size
-            source: 'media/blue_border.png'
-        Color:
-            rgba: 1, 1, 1, 1
-
-<GridStencil@StencilView+GridLayout>
 
 <PlayerView>:
     knspace: 'fork'
@@ -104,7 +24,7 @@
             border: (16, 16, 16, 16)
             pos: self.pos
             size: self.size
-            source: 'media/blue_border.png'
+            source: 'blue_border.png'
     GridStencil:
         cols: 1
         spacing: '5dp',
@@ -124,7 +44,7 @@
             ImageButton:
                 size_hint_x: None
                 width: self.height
-                source: 'media/settings.png' if self.state == 'normal' else 'media/settings_down.png'
+                source: 'settings.png' if self.state == 'normal' else 'settings_down.png'
                 on_release: root.players.show_settings(root.player)
             Widget:
                 size_hint_x: None
@@ -148,10 +68,10 @@
                 size_hint_x: None
                 width: self.height
                 knsname: 'play'
-                background_normal: 'media/play.png'
-                background_down: 'media/pause.png'
-                background_disabled_normal: 'media/play.png'
-                background_disabled_down: 'media/pause.png'
+                background_normal: 'play.png'
+                background_down: 'pause.png'
+                background_disabled_normal: 'play.png'
+                background_disabled_down: 'pause.png'
                 disabled: not root.player or not not root.player.config_active
                 background_color: [.2, .2, .2, 1] if self.disabled else [1, 1, 1, 1]
                 on_release: root.player.play() if self.state == 'down' else root.player.stop()
@@ -159,12 +79,11 @@
             size_hint_y: None
             height: self.minimum_height
             spacing: 5
-            orientaion: 'horizontal'
             rows: 1
             ImageButton:
                 size_hint_x: None
                 width: self.height
-                source: 'media/browse.png' if self.state == 'normal' else 'media/browse_down.png'
+                source: 'browse.png' if self.state == 'normal' else 'browse_down.png'
                 on_release:
                     app.filebrowser.target = path_dir.text
                     app.filebrowser.dirselect = True
@@ -190,9 +109,16 @@
                 width: '40dp'
                 hint_text: 'n'
                 on_text: root.handle_fname(path_fname, path_count, 'count')
-        FrameDispaly:
-            knsname: 'display'
+        RelativeLayout:
             id: display
+            canvas:
+                Color:
+                    rgba: 1, 1, 1, 1
+            BufferImage:
+                knsname: 'display'
+                do_rotation: False
+                auto_bring_to_front: False
+                size: self.parent.size
             GridLayout:
                 rows: 1
                 size_hint: None, None
@@ -200,23 +126,23 @@
                 right: self.size and (display.width - 20)
                 top: self.size and (display.height - 20)
                 spacing: ['20dp']
-                KNImageToggleButton:
+                ImageToggleButton:
                     id: record
                     knsname: 'record'
                     size_hint_x: None
                     width: self.height
-                    source: 'media/record.png' if self.state == 'normal' else 'media/record_down.png'
+                    source: 'record.png' if self.state == 'normal' else 'record_down.png'
                     on_release: root.player.record() if self.state == 'down' else root.player.stop_recording()
                 ImageButton:
                     size_hint_x: None
                     width: self.height
-                    source: 'media/screenshot.png' if self.state == 'normal' else 'media/screenshot_down.png'
+                    source: 'screenshot.png' if self.state == 'normal' else 'screenshot_down.png'
                     on_release:
                         app.filebrowser.target = path_dir.text
                         app.filebrowser.dirselect = False
                         app.filebrowser.multiselect = False
                         app.filebrowser.callback = root.player.save_screenshot
-                        app.filebrowser.ids.file_browser.ids.file_text.text = path_fname.fmt_text.split('.')[0] + '.png'
+                        app.filebrowser.ids.file_browser.ids.file_text.text = path_fname.fmt_text.split('.')[0] + '.bmp'
                         app.filebrowser.open()
                 Widget:
                     size_hint: None, None
@@ -233,18 +159,15 @@
 
 
 <PlayerRoot>:
-    knspace: 'fork'
-    knsname: 'play_root'
     orientation: 'vertical'
-    error_output: error_output
     BoxLayout:
         orientation: 'horizontal'
         ScrollView:
             scroll_type: ['bars']
             bar_width: '15dp'
             on_size:
-                outer_splitter.height = max(outer_splitter.height, self.height)
-                inner_splitter.width = max(inner_splitter.width, self.width)
+                outer_splitter.height = self.height
+                inner_splitter.width = self.width
             Splitter:
                 id: outer_splitter
                 sizable_from: 'bottom'
@@ -279,7 +202,7 @@
                 ImageButton:
                     size_hint_y: None
                     height: self.width
-                    source: 'media/browse.png' if self.state == 'normal' else 'media/browse_down.png'
+                    source: 'browse.png' if self.state == 'normal' else 'browse_down.png'
                     on_release:
                         app.filebrowser.target = dirname(root.players.settings_path)
                         app.filebrowser.dirselect = False
@@ -289,7 +212,7 @@
                 ImageButton:
                     size_hint_y: None
                     height: self.width
-                    source: 'media/save.png' if self.state == 'normal' else 'media/save_down.png'
+                    source: 'save.png' if self.state == 'normal' else 'save_down.png'
                     on_release:
                         app.filebrowser.target = dirname(root.players.settings_path)
                         app.filebrowser.dirselect = False
@@ -299,12 +222,8 @@
                 ImageButton:
                     size_hint_y: None
                     height: self.width
-                    source: 'media/add.png' if self.state == 'normal' else 'media/add_down.png'
+                    source: 'add.png' if self.state == 'normal' else 'add_down.png'
                     on_release: root.players.add_player()
-                ErrorIndicator:
-                    id: error_output
-                    size_hint_y: None
-                    height: self.width
                 RelativeLayout:
                     size_hint: None, None
                     height: self.width
@@ -315,18 +234,18 @@
                         size_hint: None, None
                         width: self.parent.true_width
                         height: int(24 / 64. * self.width)
-                        source: 'media/expand_hori.png' if self.state == 'normal' else 'media/expand_hori_down.png'
+                        source: 'expand_hori.png' if self.state == 'normal' else 'expand_hori_down.png'
                         on_release: inner_splitter.width += 100
                     ImageButton:
                         size_hint: None, None
                         height: self.parent.true_width
                         width: int(24 / 64. * self.height)
                         pos_hint: {'top': 1., 'right': 1.}
-                        source: 'media/expand_vert.png' if self.state == 'normal' else 'media/expand_vert_down.png'
+                        source: 'expand_vert.png' if self.state == 'normal' else 'expand_vert_down.png'
                         on_release: outer_splitter.height += 100
                     KNSpinner:
                         id: n_rows
-                        knsname: 'n_rows'
+                        knsname: 'recorder_n_rows'
                         text: '2'
                         on_text: root.players.cam_grid_rows = int(self.text)
                         padding: '20dp', '12dp'
@@ -337,7 +256,7 @@
                         pos_hint: {'top': 1}
 
 
-<VideoScreenSelect@LabeledCheck>:
+<VideoScreenSelect@RadioLabeledCheck>:
     on_release: self.knspace.popup.players.replace_player_cls(self.knspace.popup.player, self.text)
     group: 'video_source'
 
@@ -402,13 +321,13 @@
             size_hint_y: None
             height: '40dp'
             Widget
-            LabeledCheck:
+            RadioLabeledCheck:
                 id: webcam_check
                 knsname: 'webcam_fmt'
                 group: 'video_fmt'
                 text: 'Webcam'
                 on_state: video_fmt.current = 'dshow' if self.state == 'down' else 'other'
-            LabeledCheck:
+            RadioLabeledCheck:
                 knsname: 'other_fmt'
                 group: 'video_fmt'
                 text: 'Other'
@@ -428,7 +347,7 @@
                     border: (16, 16, 16, 16)
                     pos: self.pos
                     size: self.size
-                    source: 'media/blue_border.png'
+                    source: 'blue_border.png'
                 Color:
                     rgba: 1, 1, 1, 1
             Screen:
@@ -451,7 +370,7 @@
                         ImageButton:
                             size_hint_x: None
                             width: self.height
-                            source: 'media/refresh.png' if self.state == 'normal' else 'media/refresh_down.png'
+                            source: 'refresh.png' if self.state == 'normal' else 'refresh_down.png'
                             on_release: root.knspace.popup.player.refresh_dshow(dshow_cams, dshow_opts)
                         KNSpinner:
                             id: dshow_cams
@@ -577,20 +496,25 @@
             spacing: ['20dp']
             size_hint_y: None
             height: '70dp'
-            disabled: not root.knspace.popup or not root.knspace.popup.player or not not root.knspace.popup.player.config_active
+            disabled: not hasattr(root.knspace, 'popup') or not root.knspace.popup or not root.knspace.popup.player or not not root.knspace.popup.player.config_active
             ImageButton:
                 size_hint_x: None
                 width: self.height
-                source: 'media/settings.png' if self.state == 'normal' else 'media/settings_down.png'
+                source: 'settings.png' if self.state == 'normal' else 'settings_down.png'
                 on_release: root.knspace.popup.player.ask_config('gui')
             ImageButton:
                 size_hint_x: None
                 width: self.height
-                source: 'media/refresh.png' if self.state == 'normal' else 'media/refresh_down.png'
+                source: 'refresh.png' if self.state == 'normal' else 'refresh_down.png'
                 on_release: root.knspace.popup.player.ask_config('serials')
             KNSpinner:
                 knsname: 'pt_serial'
                 on_text: if root.knspace.popup: root.knspace.popup.player.serial = self.text
+                background_normal: ''
+                background_color: .45, .13, .17, 1
+            KNSpinner:
+                knsname: 'pt_ip'
+                on_text: if root.knspace.popup: root.knspace.popup.player.ip = self.text
                 background_normal: ''
                 background_color: .45, .13, .17, 1
 
@@ -648,6 +572,7 @@
                                 id: RTV
                                 text: 'RTV'
                             VideoScreenSelect:
+                                disabled: Players.ptgray_disabled
                                 id: PTGray
                                 text: 'PTGray'
                             KNToggleButton:
@@ -655,10 +580,10 @@
                                 width: self.height
                                 knsname: 'play'
                                 id: play
-                                background_normal: 'media/play.png'
-                                background_down: 'media/pause.png'
-                                background_disabled_normal: 'media/play.png'
-                                background_disabled_down: 'media/pause.png'
+                                background_normal: 'play.png'
+                                background_down: 'pause.png'
+                                background_disabled_normal: 'play.png'
+                                background_disabled_down: 'pause.png'
                                 disabled: not root.player or not not root.player.config_active
                                 background_color: [.2, .2, .2, 1] if self.disabled else [1, 1, 1, 1]
                                 on_release: root.player.play() if self.state == 'down' else root.player.stop()
@@ -725,5 +650,6 @@
                                 on_release: root.players.hide_settings(root.player)
                             Widget:
                                 size_hint_x: .1
-                    FrameDispaly
+                    BufferImage:
+                        do_rotation: False
                         knsname: 'display'

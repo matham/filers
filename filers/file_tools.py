@@ -1,4 +1,7 @@
-'''Provides a class that manipulates files en-masse using patterns. It can
+'''File tools
+===============
+
+Provides a class that manipulates files en-masse using patterns. It can
 move/copy/verify/delete files based on a list of input files and patterns
 determining how the output files should look.
 

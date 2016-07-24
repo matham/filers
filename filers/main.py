@@ -1,86 +1,68 @@
-'''
-TODO: keyboard selection and manipulation.
+'''Filers App
+===============
+
+The main app.
 '''
 
-import kivy
-import sys
-from os.path import dirname, join, exists, abspath, isdir
-import six
+from os.path import dirname, join, abspath, isdir
+from functools import partial
+from cplcom.app import CPLComApp, run_app as run_cpl_app
 
-from kivy.config import Config
-try:
-    Config.set('kivy', 'exit_on_escape', 0)
-    kivy.require('1.9.1')
-    from kivy.base import EventLoop
-    EventLoop.ensure_window()
-    from kivy.clock import Clock
-    Clock.max_iteration = 20
-except:
-    if 'SPHINX_DOC_INCLUDE' not in os.environ:
-        raise
 from kivy.core.window import Window
-from kivy.app import App
-from kivy.properties import ObjectProperty, ListProperty, StringProperty
 from kivy.lang import Builder
-from kivy.factory import Factory
-from kivy.modules import inspector
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.behaviors import FocusBehavior
-from kivy.config import ConfigParser
-import kivy.garden.filebrowser
-import logging
-from filers import __version__
-from filers import config_name, root_data_path, root_install_path
+from kivy import resources
+from kivy.clock import Clock
+from cplcom.config import populate_dump_config
 
+from filers import __version__
 from filers.record import exit_players, Players
+# from filers.process import exit_converter, VideoConverterController
 import filers.misc_widgets
-# from filers.process import Processor
 # from filers.file_tools import FileTools
 
-__all__ = ('MainFrame', 'FilersApp', 'run_filers')
+__all__ = ('FilersApp', 'run_app')
 
 
-class MainFrame(FocusBehavior, BoxLayout):
-    ''' Root widget that is returned by the :attr:`FilersApp.build` method.
-    This contains all the gui widgets.
-    '''
-
-    pass
-
-
-class FilersApp(App):
+class FilersApp(CPLComApp):
     ''' The filer app class. '''
 
-    filebrowser = ObjectProperty(None)
-    ''' The :class:`PopupBrowser` instance. '''
+    @classmethod
+    def get_config_classes(cls):
+        d = super(FilersApp, cls).get_config_classes()
+        d.update(Players.get_config_classes())
+        return d
+
+    def __init__(self, **kwargs):
+        super(FilersApp, self).__init__(**kwargs)
+        settings = populate_dump_config(
+            self.ensure_config_file(self.json_config_path), {'app': FilersApp})
+
+        for k, v in settings['app'].items():
+            setattr(self, k, v)
 
     def build(self):
-        self.filebrowser = Factory.get('PopupBrowser')()
-        root = abspath(dirname(__file__))
-        Builder.load_file(join(root_install_path, 'record.kv'))
-        # Builder.load_file(join(root, 'process.kv'))
-        # Builder.load_file(join(root, 'file_tools.kv'))
-        frame = MainFrame()
-        # inspector.create_inspector(Window, frame)
-        return frame
+        Builder.load_file(join(dirname(__file__), 'record.kv'))
+        # Builder.load_file(join(dirname(__file__), 'process.kv'))
+        # Builder.load_file(join(dirname(__file__), 'file_tools.kv'))
+        return super(FilersApp, self).build()
 
     def on_start(self):
-        self.config_filers = ConfigParser(name=config_name)
-        ini = self.config_filers
-        config_path = join(root_data_path, 'filers.ini')
-        if not exists(config_path):
-            with open(config_path, 'w'):
-                pass
-        ini.read(config_path)
-
         self.set_tittle()
         Clock.schedule_interval(self.set_tittle, 1)
 
     def set_tittle(self, *largs):
         ''' Sets the title of the window using the currently running
         tab. This is called at 1Hz. '''
-        Window.set_title('Filers v{}, CPL lab.{}'.format(
-            __version__, Players.get_window_title()))
+        return
+        Window.set_title('Filers v{}, CPL lab.{}{}'.format(
+            __version__, Players.get_window_title(),
+            VideoConverterController.get_window_title()))
+
+    def check_close(self):
+        if Players.is_playing():
+            self._close_message = 'Cannot close while media is still playing.'
+            return False
+        return True
 
     def assign_path(
             self, text, path, selection, filename, fileselect=False,
@@ -116,30 +98,17 @@ class FilersApp(App):
             for i in range(len(files)):
                 if ' ' in files[i] or ',' in files[i]:
                     files[i] = '"{}"'.format(files[i])
-        text.text = ', '.join(files)
+        text.text = ', '.join(sorted(set(files)))
 
 
-def run_filers():
-    '''
-    Runs the filers application.
-    '''
-
-    def request_close(*largs, **kwargs):
-        if kwargs.get('source', None) == 'keyboard':
-            return True
-    Window.bind(on_request_close=request_close)
-    logging.root.setLevel(logging.INFO)
-
-    a = FilersApp()
-    err = None
-    try:
-        a.run()
-    except:
-        err = sys.exc_info()
+def _cleanup():
     exit_players()
-    if err is not None:
-        six.reraise(*err)
+    # exit_converter()
 
+run_app = partial(run_cpl_app, FilersApp, _cleanup)
+'''The function that starts the GUI and the entry point for
+the main script.
+'''
 
 if __name__ == '__main__':
-    run_filers()
+    run_app()

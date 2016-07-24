@@ -1,30 +1,22 @@
-'''Provides a class that plays and records videos.
+'''Recorder
+===========
 
-Keyboard keys
---------------
-
-`space`:
-    Starts and stops recording video to an output file.
-`enter`:
-    Starts playing the input cam.
-`escape`:
-    Stops the video from playing, and turns off the recorder if recording.
+Module for playing and recording video.
 '''
 
 from os.path import isfile, join, dirname, abspath, exists, expanduser
 from os.path import isdir
 import logging
+import sys
 from threading import Thread, RLock
 import psutil
 import time
 from fractions import Fraction
-import traceback
 from time import sleep
 from functools import partial
 from collections import namedtuple, defaultdict
 import re
 import sys
-from math import ceil
 import json
 try:
     from Queue import Queue
@@ -40,13 +32,11 @@ from ffpyplayer.writer import MediaWriter
 
 from pybarst.core.server import BarstServer
 from pybarst.rtv import RTVChannel
-from pyflycap2.interface import GUI, Camera, CameraContext
 
 from kivy.clock import Clock
 from kivy.compat import clock
-from kivy.uix.behaviors.knspace import KNSpaceBehavior
+from kivy.uix.behaviors.knspace import KNSpaceBehavior, knspace
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.popup import Popup
 from kivy.properties import (
@@ -54,15 +44,26 @@ from kivy.properties import (
     ObjectProperty, ListProperty, StringProperty, BooleanProperty,
     DictProperty, AliasProperty, OptionProperty, ConfigParserProperty)
 from kivy.event import EventDispatcher
+from kivy import resources
 from kivy.logger import Logger
 
-from filers import config_name, root_data_path, root_install_path
+try:
+    from pyflycap2.interface import GUI, Camera, CameraContext
+except ImportError as e:
+    GUI = Camera = CameraContext = None
+    Logger.error(e, exc_info=sys.exc_info())
+
+from cplcom import config_name
+from cplcom.graphics import EventFocusBehavior
+from cplcom.config import populate_dump_config
+from cplcom.app import app_error
+from filers import root_data_path, root_install_path
 from filers.tools import (str_to_float, pretty_space, pretty_time, KivyQueue,
-                          ConfigProperty, to_bool)
-from filers .misc_widgets import EventFocusBehavior
+                          ConfigProperty, to_bool, byteify)
 
 
-__all__ = ('Recorder', )
+__all__ = ('Players', 'Player', 'FFmpegPlayer', 'RTVPlayer', 'PTGrayPlayer',
+           'exit_players', 'PlayerRoot', 'PlayerView', 'PlayerSettings')
 
 set_log_callback(logger=Logger, default_only=True)
 logging.info('Filers: Using ffpyplayer {}'.format(ffpyplayer.__version__))
@@ -74,19 +75,9 @@ def eat_first(f, val, *largs, **kwargs):
     f(*largs, **kwargs)
 
 
-def byteify(val):
-    if isinstance(val, dict):
-        return {byteify(key): byteify(value)
-                for key, value in val.iteritems()}
-    elif isinstance(val, list):
-        return [byteify(element) for element in val]
-    elif isinstance(val, unicode):
-        return val.encode('utf-8')
-    else:
-        return val
-
-
 def exit_players():
+    '''Closes all running players and saves the last config.
+    '''
     for player in Players.players:
         try:
             player.stop_all(join=True)
@@ -94,20 +85,23 @@ def exit_players():
             pass
     p = Players.players_singleton
     if p:
-        try:
-            p.save_config()
-        except Exception as e:
-            Logger.error('Players: {}'.format(e))
-            Logger.exception(e)
+        p.save_config()
 
 
 class Players(EventDispatcher):
+    '''Singleton that controls all the players.
+    '''
+
+    __settings_attrs__ = ('cam_grid_rows', )
 
     settings_path = ConfigParserProperty(
         join(root_data_path, 'recorder.json'), 'Filers',
         'settings_path', config_name)
 
     cam_grid_rows = NumericProperty(2)
+    '''The number of rows into which to split the video recorders when there's
+    more than one recorder open.
+    '''
 
     source_names = {}
 
@@ -124,6 +118,18 @@ class Players(EventDispatcher):
     players_singleton = None
 
     players_view = ObjectProperty(None)
+
+    ptgray_disabled = CameraContext is None
+
+    @staticmethod
+    def is_playing():
+        return any((p.play_state != 'none' or p.record_state != 'none'
+                    for p in Players.players))
+
+    @classmethod
+    def get_config_classes(cls):
+        return {'recorder': Players, 'FFMpeg': FFmpegPlayer, 'RTV': RTVPlayer,
+                'PTGray': PTGrayPlayer}
 
     def __init__(self, **kwargs):
         super(Players, self).__init__(**kwargs)
@@ -145,52 +151,31 @@ class Players(EventDispatcher):
             return ' - Recorder ({})'.format(n)
         return ' - Recorder ({}/{})'.format(c, n)
 
-    def log_error(self, msg=None, e=None, exc_info=None, level='error'):
-        q = self.players_view.error_output.queue
-        l = getattr(Logger, level)
-        val = msg
-
-        if msg:
-            if e:
-                val = '{}: {}'.format(msg, repr(e))
-                l(val)
-            else:
-                l(msg)
-
-        if exc_info is not None:
-            Logger.error(e, exc_info=exc_info)
-
-        if val:
-            q.append(val)
-
+    @app_error
     def load_config(self, filename):
-        if not isfile(filename):
+        filename = resources.resource_find(filename)
+        if not filename or not isfile(filename):
             return
-        filename = abspath(filename)
 
         for player in Players.players[:]:
             self.delete_player(player)
 
-        try:
-            with open(filename) as fh:
-                global_opt, players_opt = json.load(fh)
-            global_opt, players_opt = byteify(global_opt), byteify(players_opt)
+        with open(filename) as fh:
+            opts = byteify(json.load(fh))
 
-            for k, v in global_opt.items():
-                setattr(self, k, v)
-            for d in players_opt:
-                self.add_player(settings=d, show=False,
-                                cls=d.get('cls', 'FFmpeg'))
-        except Exception as e:
-            self.log_error(e=e, exc_info=sys.exc_info(), msg='Loading config')
-        else:
-            if filename:
-                self.settings_path = filename
+        for k, v in opts.pop('recorder', {}).items():
+            setattr(self, k, v)
+        for _, d in sorted(opts.items(), key=lambda x: x[0]):
+            self.add_player(settings=d, show=False,
+                            cls=d.pop('cls', 'FFmpeg'))
+        self.settings_path = filename
 
+    @app_error
     def save_config(self, filename=None):
         filename = filename or self.settings_path
         if not filename:
             return
+        filename = knspace.app.ensure_config_file(filename)
 
         p = self.settings_display and self.settings_display.player
         if p:
@@ -200,21 +185,12 @@ class Players(EventDispatcher):
         for p in Players.players:
             p.read_viewer_settings()
 
-        global_opt = self.get_config_dict()
-        players_opt = []
-        for p in Players.players:
-            d = p.get_config_dict()
-            players_opt.append(d)
+        d = {'recorder': self}
+        for i, p in enumerate(Players.players):
+            d['player{}'.format(i)] = p
 
-        try:
-            with open(filename, 'w') as fh:
-                json.dump((global_opt, players_opt), fh, sort_keys=True,
-                          indent=4, separators=(',', ': '))
-        except Exception as e:
-            self.log_error(e=e, exc_info=sys.exc_info(), msg='Loading config')
-        else:
-            if filename:
-                self.settings_path = filename
+        populate_dump_config(filename, d, from_file=False)
+        self.settings_path = filename
 
     def ui_config(self, load, path, selection, filename):
         fname = abspath(join(path, filename))
@@ -223,20 +199,17 @@ class Players(EventDispatcher):
         else:
             self.save_config(fname)
 
-    def get_config_dict(self):
-        attrs = ['cam_grid_rows']
-        return {k: getattr(self, k) for k in attrs}
-
     def display_update_callback(self, *largs):
         for player in Players.players:
             player.player_view.update_cycle()
 
+    @app_error
     def add_player(self, settings={}, show=True, cls='FFmpeg'):
         player = self.source_names[cls](players=self, **settings)
         Players.players.append(player)
         display = PlayerView(player=player, players=self)
         player.player_view = display
-        player.display_widget = display.knspace.display.ids.display.__self__
+        player.display_widget = display.knspace.display.__self__
         self.container.add_widget(display)
         player.write_viewer_settings()
 
@@ -247,6 +220,7 @@ class Players(EventDispatcher):
         if show:
             self.show_settings(player)
 
+    @app_error
     def replace_player_cls(self, player, new_cls):
         if isinstance(player, self.source_names[new_cls]):
             return
@@ -265,20 +239,19 @@ class Players(EventDispatcher):
 
         if self.settings_display.parent is not None:
             new_player.display_widget = \
-                self.settings_display.knspace.display.ids.display.__self__
+                self.settings_display.knspace.display.__self__
             self.settings_display.player = new_player
             new_player.write_widget_settings()
         else:
-            print "this shouldn't happen"
             new_player.display_widget = \
-                player.player_view.knspace.display.ids.display.__self__
+                player.player_view.knspace.display.__self__
         self.settings_display.knspace.source_type.current = new_cls
 
     def show_settings(self, player):
         self.settings_display.player = player
         player.write_widget_settings()
         player.display_widget = \
-            self.settings_display.knspace.display.ids.display.__self__
+            self.settings_display.knspace.display.__self__
         self.settings_display.open()
 
     def hide_settings(self, player):
@@ -288,8 +261,9 @@ class Players(EventDispatcher):
         self.settings_display.dismiss()
         self.settings_display.player = None
         player.display_widget = \
-            player.player_view.knspace.display.ids.display.__self__
+            player.player_view.knspace.display.__self__
 
+    @app_error
     def delete_player(self, player):
         self.settings_display.dismiss()
         player.stop_all()
@@ -307,10 +281,21 @@ class Players(EventDispatcher):
 
 
 class Player(EventDispatcher):
+    '''Base class for every player.
+    '''
+
+    __settings_attrs__ = (
+        'record_directory', 'record_fname', 'record_fname_count',
+        'metadata_play', 'metadata_play_used', 'metadata_record', 'cls')
 
     players = ObjectProperty(None)
 
     cls = StringProperty('')
+    '''(internal) The string associated with the player source used.
+
+    It is one of ``FFMpeg``, ``RTV``, or ``PTGray`` indicating the camera
+    being used.
+    '''
 
     player_view = None
 
@@ -343,10 +328,22 @@ class Player(EventDispatcher):
     '''
 
     record_directory = StringProperty(expanduser('~'))
+    '''The directory into which videos should be saved.
+    '''
 
     record_fname = StringProperty('video{}.avi')
+    '''The filename to be used to record the next video.
+
+    If ``{}`` is present in the filename, it'll be replaced with the value of
+    :attr:`record_fname_count` which auto increments after every video, when
+    used.
+    '''
 
     record_fname_count = StringProperty('0')
+    '''A counter that auto increments by one after every recorded video.
+
+    Used to give unique filenames for each video file.
+    '''
 
     config_active = BooleanProperty(False)
 
@@ -361,10 +358,17 @@ class Player(EventDispatcher):
     use_real_time = False
 
     metadata_play = ObjectProperty(None)
+    '''(internal) Describes the video metadata of the video player.
+    '''
 
     metadata_play_used = ObjectProperty(None)
+    '''(internal) Describes the video metadata of the video player that is
+    actually used by the player.
+    '''
 
     metadata_record = ObjectProperty(None)
+    '''(internal) Describes the video metadata of the video recorder.
+    '''
 
     real_rate = 0
 
@@ -405,13 +409,14 @@ class Player(EventDispatcher):
         settings = self.players.settings_display
         if settings.player == self:
             settings.knspace.play.state = 'normal'
-        self.players.log_error(**kwargs)
 
-    def get_config_dict(self):
-        attrs = [
-            'record_directory', 'record_fname', 'record_fname_count',
-            'metadata_play', 'metadata_play_used', 'metadata_record', 'cls']
-        return {k: getattr(self, k) for k in attrs}
+        msg = kwargs.get('msg', '')
+        e = kwargs.get('e', None)
+        if e and msg:
+            e.args = e.args + (msg, ) if e.args else (msg, )
+        elif not e:
+            e = Exception(msg)
+        knspace.app.handle_exception(e, exc_info=kwargs.get('exc_info', None))
 
     def write_widget_settings(self):
         kn = self.players.settings_display.knspace
@@ -469,6 +474,7 @@ class Player(EventDispatcher):
         orate = orate or irate
         return (ifmt, iw, ih, irate), (ofmt, ow, oh, orate)
 
+    @app_error
     def compute_preview_stats(self):
         self.read_widget_play_settings()
         self.read_widget_record_settings()
@@ -491,32 +497,28 @@ class Player(EventDispatcher):
             pretty_space(obps * 60), pretty_time(free / float(obps)))
         self.preview_stats = text
 
+    @app_error
     def save_screenshot(self, path, selection, filename):
         fname = join(abspath(path), filename)
-        try:
-            if self.last_image is None:
-                raise ValueError('No image acquired')
+        if self.last_image is None:
+            raise ValueError('No image acquired')
 
-            img, _ = self.last_image
-            fmt = img.get_pixel_format()
-            w, h = img.get_size()
+        img, _ = self.last_image
+        fmt = img.get_pixel_format()
+        w, h = img.get_size()
 
-            codec = get_format_codec(fname)
-            ofmt = get_supported_pixfmts(codec, fmt)[0]
-            if ofmt != fmt:
-                sws = SWScale(w, h, fmt, ofmt=ofmt)
-                img = sws.scale(img)
-                fmt = ofmt
+        codec = get_format_codec(fname)
+        ofmt = get_supported_pixfmts(codec, fmt)[0]
+        if ofmt != fmt:
+            sws = SWScale(w, h, fmt, ofmt=ofmt)
+            img = sws.scale(img)
+            fmt = ofmt
 
-            out_opts = {'pix_fmt_in': fmt, 'width_in': w, 'height_in': h,
-                        'frame_rate': (30, 1)}
-            writer = MediaWriter(fname, [out_opts])
-            writer.write_frame(img=img, pts=0, stream=0)
-            writer.close()
-        except Exception as e:
-            self.players.log_error(
-                e=e, exc_info=sys.exc_info(),
-                msg='Screenshot: Could not save {}'.format(fname))
+        out_opts = {'pix_fmt_in': fmt, 'width_in': w, 'height_in': h,
+                    'frame_rate': (30, 1)}
+        writer = MediaWriter(fname, [out_opts])
+        writer.write_frame(img=img, pts=0, stream=0)
+        writer.close()
 
     def play(self):
         '''Called from main thread only, starts playing and sets play state to
@@ -621,7 +623,8 @@ class Player(EventDispatcher):
             while getattr(self, thread + '_state') == 'starting':
                 sleep(.01)
         else:
-            if e and getattr(self, thread + '_state') == thread + 'ing':
+            if e and getattr(self, thread + '_state') in (thread + 'ing',
+                                                          'starting'):
                 src = '{}er'.format(thread.capitalize())
                 Clock.schedule_once(partial(
                     self.err_callback, msg='%s: %s' % (self, src),
@@ -732,17 +735,33 @@ class Player(EventDispatcher):
 
 
 class FFmpegPlayer(Player):
+    '''Wrapper for ffmapeg based player.
+    '''
+
+    __settings_attrs__ = ('play_filename', 'file_fmt', 'icodec',
+                          'dshow_true_filename', 'dshow_opt')
 
     play_filename = StringProperty('')
+    '''The filename of the media being played. Can be e.g. a url etc.
+    '''
 
     file_fmt = StringProperty('dshow')
-    '''Can be empty or a format e.g. `dshow`. '''
+    '''The format used to play the video. Can be empty or a format e.g.
+    ``dshow`` for webcams.
+    '''
 
     icodec = StringProperty('')
+    '''The codec used to open the video stream with.
+    '''
 
     dshow_true_filename = StringProperty('')
+    '''The real and complete filename of the direct show (webcam) device.
+    '''
 
     dshow_opt = StringProperty('')
+    '''The camera options associated with :attr:`dshow_true_filename` when
+    dshow is used.
+    '''
 
     dshow_names = {}
 
@@ -836,14 +855,6 @@ class FFmpegPlayer(Player):
         fmt, (w, h), _ = self.parse_dshow_opt(opt)
         return w * h, sum(get_image_size(fmt, w, h))
 
-    def get_config_dict(self):
-        config = super(FFmpegPlayer, self).get_config_dict()
-        attrs = ['play_filename', 'file_fmt', 'icodec', 'dshow_true_filename',
-                 'dshow_opt']
-        for k in attrs:
-            config[k] = getattr(self, k)
-        return config
-
     def read_widget_play_settings(self):
         super(FFmpegPlayer, self).read_widget_play_settings()
         kn = self.players.settings_display.knspace
@@ -857,7 +868,7 @@ class FFmpegPlayer(Player):
         if self.play_filename != kn.filename.text:
             self.play_filename = kn.filename.text
             self.dshow_true_filename = self.dshow_names.get(
-                    self.play_filename, self.play_filename)
+                self.play_filename, self.play_filename)
 
     def write_widget_settings(self):
         super(FFmpegPlayer, self).write_widget_settings()
@@ -887,7 +898,7 @@ class FFmpegPlayer(Player):
         if mode.endswith('error'):
             Clock.schedule_once(partial(
                 self.err_callback, msg='Player: {}, {}'.format(mode, value)),
-                                0)
+                0)
         self._request_stop('play')
 
     def play_thread_run(self):
@@ -1046,20 +1057,41 @@ class FFmpegPlayer(Player):
 
 
 class RTVPlayer(Player):
+    '''Wrapper for RTV based player.
+    '''
+
+    __settings_attrs__ = ('remote_computer_name', 'pipe_name', 'port',
+                          'video_fmt')
 
     video_fmts = {
         'full_NTSC': (640, 480), 'full_PAL': (768, 576),
         'CIF_NTSC': (320, 240), 'CIF_PAL': (384, 288),
-        'QCIF_NTSC': (160, 120),  'QCIF_PAL': (192, 144)
+        'QCIF_NTSC': (160, 120), 'QCIF_PAL': (192, 144)
     }
 
     remote_computer_name = StringProperty('')
+    '''The name of the computer running Barst, if it's a remote computer.
+    Otherwise it's the empty string.
+    '''
 
     pipe_name = StringProperty('filers_rtv')
+    '''The internal name used to communicate with Barst. When running remotely,
+    the name is used to discover Barst.
+    '''
 
     port = NumericProperty(0)
+    '''The RTV port on the card to use.
+    '''
 
     video_fmt = StringProperty('full_NTSC')
+    '''The video format of the video being played.
+
+    It can be one of the keys in::
+
+        {'full_NTSC': (640, 480), 'full_PAL': (768, 576),
+        'CIF_NTSC': (320, 240), 'CIF_PAL': (384, 288),
+        'QCIF_NTSC': (160, 120), 'QCIF_PAL': (192, 144)}
+    '''
 
     channel = None
 
@@ -1067,13 +1099,6 @@ class RTVPlayer(Player):
         super(RTVPlayer, self).__init__(**kwargs)
         self.metadata_play = self.metadata_play_used = \
             VideoMetadata('gray', 0, 0, 0)
-
-    def get_config_dict(self):
-        config = super(RTVPlayer, self).get_config_dict()
-        attrs = ['remote_computer_name', 'pipe_name', 'port', 'video_fmt']
-        for k in attrs:
-            config[k] = getattr(self, k)
-        return config
 
     def read_widget_play_settings(self):
         super(RTVPlayer, self).read_widget_play_settings()
@@ -1117,7 +1142,8 @@ class RTVPlayer(Player):
             r'C:\Program Files\Barst\Barst.exe',
             r'C:\Program Files\Barst\Barst64.exe',
             r'C:\Program Files (x86)\Barst\Barst.exe',
-            join(root_install_path, 'Barst.exe'))
+            join(root_install_path, 'Barst.exe'),
+            join(root_install_path, 'Barst64.exe'))
         barst_bin = None
         for f in files:
             f = abspath(f)
@@ -1199,12 +1225,28 @@ class RTVPlayer(Player):
 
 
 class PTGrayPlayer(Player):
+    '''Wrapper for Point Gray based player.
+    '''
+
+    __settings_attrs__ = ('serial', 'ip', 'cam_config_opts')
 
     serial = NumericProperty(0)
+    '''The serial number of the camera to open. Either :attr:`ip` or
+    :attr:`serial` must be provided.
+    '''
 
     serials = []
 
+    ip = StringProperty('')
+    '''The ip address of the camera to open. Either :attr:`ip` or
+    :attr:`serial` must be provided.
+    '''
+
+    ips = []
+
     cam_config_opts = DictProperty({})
+    '''The configuration options used to configure the camera after opening.
+    '''
 
     config_thread = None
 
@@ -1221,9 +1263,13 @@ class PTGrayPlayer(Player):
 
     def __init__(self, **kwargs):
         super(PTGrayPlayer, self).__init__(**kwargs)
-        self.start_config()
+        if CameraContext is not None:
+            self.start_config()
 
     def on_serial(self, *largs):
+        self.ask_config('serial')
+
+    def on_ip(self, *largs):
         self.ask_config('serial')
 
     def start_config(self, *largs):
@@ -1249,17 +1295,13 @@ class PTGrayPlayer(Player):
         for k, v in kwargs.items():
             setattr(self, k, v)
         serial = self.players.settings_display.knspace.pt_serial
+        ip = self.players.settings_display.knspace.pt_ip
         if 'serial' in kwargs:
             serial.text = str(kwargs['serial'])
+            ip.text = kwargs['ip']
         if 'serials' in kwargs:
             serial.values = map(str, kwargs['serials'])
-
-    def get_config_dict(self):
-        config = super(PTGrayPlayer, self).get_config_dict()
-        attrs = ['serial', 'cam_config_opts']
-        for k in attrs:
-            config[k] = getattr(self, k)
-        return config
+            ip.values = kwargs['ips']
 
     def write_gige_opts(self, c, opts):
         c.set_gige_mode(opts['mode'])
@@ -1289,22 +1331,34 @@ class PTGrayPlayer(Player):
                 if item == 'eof':
                     return
 
+                ip = ''
                 serial = 0
                 do_serial = False
                 if item == 'serials':
                     cc.rescan_bus()
                     cams = cc.get_gige_cams()
                     old_serial = serial = self.serial
-                    if serial not in cams:
-                        serial = cams[0] if cams else 0
+                    old_ip = ip = self.ip
 
-                    Clock.schedule_once(partial(self.finish_ask_config, item,
-                                                serials=cams, serial=serial))
+                    ips = ['.'.join(map(str, Camera(serial=s).ip))
+                           for s in cams]
+                    if cams:
+                        if serial not in cams and ip not in ips:
+                            serial = cams[0]
+                            ip = ips[0]
+                        elif serial in cams:
+                            ip = ips[cams.index(serial)]
+                        else:
+                            serial = cams[ips.index(ip)]
+
+                    Clock.schedule_once(partial(
+                        self.finish_ask_config, item, serials=cams,
+                        serial=serial, ips=ips, ip=ip))
 
                     if serial:
                         c = Camera(serial=serial)
                         c.connect()
-                        if old_serial == serial:
+                        if old_serial == serial or old_ip == ip:
                             self.write_gige_opts(c, self.cam_config_opts)
                         self.read_gige_opts(c)
                         c.disconnect()
@@ -1314,18 +1368,23 @@ class PTGrayPlayer(Player):
                 elif item == 'gui':
                     gui = GUI()
                     gui.show_selection()
-                    do_serial = True
+                    do_serial = True  # read possibly updated config
 
                 if do_serial:
+                    _ip = ip = self.ip
                     serial = self.serial
-                    if serial:
-                        c = Camera(serial=serial)
+                    if serial or ip:
+                        if _ip:
+                            _ip = map(int, _ip.split('.'))
+                        c = Camera(serial=serial or None, ip=_ip or None)
+                        serial = c.serial
+                        ip = '.'.join(map(str, c.ip))
                         c.connect()
                         self.read_gige_opts(c)
                         c.disconnect()
                         c = None
 
-                if serial:
+                if serial or ip:
                     opts = self.cam_config_opts
                     if opts['fmt'] not in self.ffmpeg_pix_map:
                         raise Exception('Pixel format {} cannot be converted'.
@@ -1335,7 +1394,7 @@ class PTGrayPlayer(Player):
                         opts['height'], 30.0)
                     Clock.schedule_once(partial(
                         self.finish_ask_config, item, metadata_play=metadata,
-                        metadata_play_used=metadata))
+                        metadata_play_used=metadata, serial=serial, ip=ip))
             except Exception as e:
                 Clock.schedule_once(partial(
                     self.err_callback,
@@ -1350,11 +1409,13 @@ class PTGrayPlayer(Player):
         kn = self.players.settings_display.knspace
         s = kn.pt_serial.text
         self.serial = int(s) if s else 0
+        self.ip = kn.pt_ip.text
 
     def write_widget_settings(self):
         super(PTGrayPlayer, self).write_widget_settings()
         kn = self.players.settings_display.knspace
         kn.pt_serial.text = str(self.serial)
+        kn.pt_ip.text = self.ip
 
     def play_thread_run(self):
         self.frames_played = 0
@@ -1363,14 +1424,15 @@ class PTGrayPlayer(Player):
         ffmpeg_fmts = self.ffmpeg_pix_map
 
         try:
-            c = Camera(serial=self.serial)
+            ip = map(int, self.ip.split('.')) if self.ip else None
+            c = Camera(serial=self.serial or None, ip=ip)
             c.connect()
 
             last_queue = None
             put = None
             started = False
             trigger = self.display_trigger
-            use_rt = self.use_real_time
+            # use_rt = self.use_real_time
             count = 0
             rate = self.metadata_play_used.rate
 
@@ -1408,7 +1470,7 @@ class PTGrayPlayer(Player):
                 if ff_fmt == 'yuv444p':
                     buff = image['buffer']
                     img = Image(
-                        plane_buffers=[buff[0::3], buff[1::3], buff[2::3]],
+                        plane_buffers=[buff[2::3], buff[1::3], buff[0::3]],
                         pix_fmt=ff_fmt, size=(image['cols'], image['rows']))
                 else:
                     img = Image(
@@ -1444,7 +1506,8 @@ class PlayerRoot(KNSpaceBehavior, BoxLayout):
         def init(*largs):
             p = self.players = Players(container=self.ids.container,
                                        players_view=self)
-            self.knspace.n_rows.text = str(min(max(p.cam_grid_rows, 1), 10))
+            self.knspace.recorder_n_rows.text = str(
+                min(max(p.cam_grid_rows, 1), 10))
         Clock.schedule_once(init, 0)
 
 
@@ -1460,7 +1523,7 @@ class PlayerView(KNSpaceBehavior, EventFocusBehavior, BoxLayout):
 
     disk_stat = StringProperty('')
 
-    def on_keypress(self, key):
+    def on_key_press(self, key):
         if key == 'spacebar':
             self.knspace.record.trigger_action(0)
         elif key == 'escape':

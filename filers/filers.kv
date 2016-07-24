@@ -4,161 +4,64 @@
 #:import pretty_time filers.tools.pretty_time
 #:import expanduser os.path.expanduser
 
-<SLabel@Label>:
-    halign: 'center'
-    valign: 'middle'
-    text_size: self.size
 
+<SizedLabel@Label>:
+    padding_x: '10dp'
+    size_hint_x: None
+    width: self.texture_size[0]
 
-<RotatedLabel@SLabel>:
-    angle: 0.
-    text_size: self.size[1], self.size[0]
-    canvas.before:
-        PushMatrix
-        Rotate:
-            angle: self.angle
-            axis: 0, 0, 1
-            origin: self.center
-    canvas.after:
-        PopMatrix
+<KNLabel@KNSpaceBehavior+Label>
+<KNSizedLabel@KNSpaceBehavior+SizedLabel>
 
+<KNColoredSpinner@KNSpaceBehavior+ColoredSpinner>
 
-<ColoredBoxLayout@BoxLayout>:
-    padding: [5, 3]
-    back_color: 1, 1, 1, 1
-    canvas.before:
-        Color:
-            rgba: root.back_color
-        Rectangle:
-            pos: self.pos
-            size: self.size
-        Color:
-            rgba: 1, 1, 1, 1
-        BorderImage:
-            border: (16, 16, 16, 16)
-            pos: self.pos
-            size: self.size
-            source: 'media/blue_border.png'
-        Color:
-            rgba: 1, 1, 1, 1
+<SizedScreenManager>:
+    current_screen_obj: self.current_screen
+    size_hint_y: None
+    height: self.current_screen_obj.height if self.current_screen_obj else 0
 
+<KNSizedScreenManager@KNSpaceBehavior+SizedScreenManager>
 
-<ColoredStackLayout@StackLayout>:
-    padding: [5, 3]
-    back_color: 1, 1, 1, 1
-    canvas.before:
-        Color:
-            rgba: root.back_color
-        Rectangle:
-            pos: self.pos
-            size: self.size
-        Color:
-            rgba: 1, 1, 1, 1
-        BorderImage:
-            border: (16, 16, 16, 16)
-            pos: self.pos
-            size: self.size
-            source: 'media/blue_border.png'
-        Color:
-            rgba: 1, 1, 1, 1
-
-
-<ScrollLabel@ScrollView>:
+<RadioLabeledCheck@KNSpaceBehavior+ToggleButtonBehavior+GridLayout>:
+    rows: 1
+    size_hint_x: None
+    width: self.minimum_width
     text: ''
-    text_height: label.height
-    SLabel:
-        size_hint: None, None
-        id: label
+    always_release: True
+    allow_no_selection: False
+    SilentCheckBox:
+        id: checkbox
+        always_release: True
+        allow_no_selection: False
+        size_hint_x: None
+        width: '34sp'
+        state: root.state
+        group: (root.group + 'A') if root.group else ''
+    SizedLabel:
         text: root.text
-        on_size: self.text_size = (None, None)
-        size: self.texture_size
-        halign: 'left'
-        text_size: None, None
-        markup: True
-        padding: [10, 4]
+
+<BorderedGridLayout@GridLayout>:
+    rgba: (0, 0, 0, 1)
+    canvas.before:
+        Color:
+            rgba: self.rgba
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: 1, 1, 1, 1
+        BorderImage:
+            border: (16, 16, 16, 16)
+            pos: self.pos
+            size: self.size
+            source: 'blue_border.png'
+        Color:
+            rgba: 1, 1, 1, 1
+
+<GridStencil@StencilView+GridLayout>
 
 
 <RelativeStencil@RelativeLayout, StencilView>
-
-
-<CallbackPopup>:
-    size_hint: (None, None)
-    size: (min(self.parent.width, 800), min(self.parent.height, 600)) if self.parent else (100, 100)
-
-<PopupBrowser@CallbackPopup>:
-    target: expanduser('~')
-    dirselect: False
-    multiselect: False
-    FileBrowser:
-        id: file_browser
-        dirselect: root.dirselect
-        multiselect: root.multiselect
-        path: root.target or expanduser('~')
-        on_success:
-            if root.callback: root.callback(self.path, self.selection, self.filename)
-            if self.selection or self.filename: root.dismiss()
-        on_submit:
-            if root.callback: root.callback(self.path, self.selection, self.filename)
-            root.dismiss()
-        on_cancel_state: root.dismiss()
-
-
-<ErrorLabel@Label>:
-    size_hint_y: None
-    height: self.texture_size[1]
-    text_size: self.width, None
-    padding: '5dp', '5dp'
-    canvas.before:
-        Color:
-            rgba: .2, .2, .2, 1
-        Rectangle:
-            size: self.texture_size
-            pos: self.pos
-
-<ErrorLog@CallbackPopup>:
-    container: container
-    BoxLayout:
-        orientation: 'vertical'
-        padding: '15dp', '15dp'
-        spacing: '10dp', '10dp'
-        ScrollView:
-            bar_width: '15dp'
-            GridLayout:
-                id: container
-                padding: '15dp',
-                spacing: '15dp',
-                cols: 1
-                size_hint_y: None
-                height: self.minimum_height
-        FloatLayout:
-            size_hint_y: None
-            height: close.texture_size[1]
-            Button:
-                id: close
-                text: 'Close'
-                on_release: root.dismiss()
-                padding: '20dp', '10dp'
-                width: self.texture_size[0]
-                size_hint_x: None
-                pos_hint: {'right': 1}
-                y: self.parent.y
-
-<ErrorIndicator>:
-    on_release:
-        self.anim.cancel(self)
-        self.alpha = 1
-        self.seen = True
-        self.display.open()
-    down: 'media/ok_down.png' if self.seen else 'media/error_down.png'
-    normal: 'media/ok.png' if self.seen else 'media/error.png'
-    canvas:
-        Color:
-            rgb: 1, 1, 1
-            a: self.alpha
-        Rectangle:
-            pos: self.pos
-            size: self.size
-            source: self.down if self.state == 'down' else self.normal
 
 
 <CountDownTimer>:
@@ -191,24 +94,31 @@
             on_press: root.counter = str_to_float(counter.text, val_type=float, err_val=0.)
 
 
-<MainFrame>:
+<ErrorTab@ErrorIndicatorBase+TabbedPanelItem>
+
+<MainView@FocusBehavior+BoxLayout>:
     panel: panel
     orientation: 'vertical'
     TabbedPanel:
         id: panel
         on_parent: app.tabbed_wgt = self
         do_default_tab: False
-#        tab_pos: 'bottom_left'
-#        tab_width: self.width / 11 * 2
-#        active_wgt: app.rec_wgt if self.current_tab == record else (app.proc_wgt if self.current_tab == process else app.files_wgt)
+        tab_width: None
         TabbedPanelItem:
-            id: record
             text: 'Record'
             PlayerRoot
-#         TabbedPanelItem:
-#             id: process
-#             text: 'Process'
-#             Processor
+        ErrorTab:
+            knsname: 'error_indicator'
+            size_hint_x: None
+            width: self.height
+            on_parent:
+                app.error_indicator = self
+                self._container = error_container
+            ErrorLogContainer:
+                id: error_container
+        #TabbedPanelItem:
+        #    text: 'Convert'
+        #    VideoConverter
 #         TabbedPanelItem:
 #             id: tools
 #             text: 'File tools'

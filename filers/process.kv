@@ -1,6 +1,204 @@
+#@PydevCodeAnalysisIgnore
 #:kivy 1.8
+#:import dirname os.path.dirname
+#:import isfile os.path.isfile
 
-<ProcessInput@ColoredBoxLayout>:
+<MinYGridLayout@GridLayout>:
+    size_hint_y: None
+    height: self.minimum_height
+
+
+<ConversionGroup>:
+    knspace: 'fork'
+    knsname: 'convert_item'
+    cols: 1
+    size_hint_y: None
+    height: self.minimum_height
+    MinYGridLayout:
+        rows: 1
+        MinYGridLayout:
+            cols: 1
+            MinYGridLayout:
+                rows: 1
+                spacing: 5
+                Label:
+                    size_hint_x: None
+                    width: '45dp'
+                    text: 'Input'
+                ImageButton:
+                    size_hint_x: None
+                    width: self.height
+                    source: 'browse.png' if self.state == 'normal' else 'browse_down.png'
+                    on_release:
+                        app.filebrowser.target = (dirname(in_filepat.text) if isfile(in_filepat.text) else in_filepat.text) if in_filepat.text else ''
+                        app.filebrowser.dirselect = True
+                        app.filebrowser.multiselect = True
+                        app.filebrowser.callback = partial(app.assign_path, in_filepat, quote=True)
+                        app.filebrowser.open()
+                KNSizedTextInput:
+                    id: in_filepat
+                    hint_text: 'Directory or file'
+                    knsname: 'in_filepat'
+                    on_text: root.controller and root.controller.update_item_settings(root.__self__, 'in_filepat')
+                KNSizedTextInput:
+                    size_hint_x: None
+                    width: min(75, self.parent.width / 2.)
+                    id: file_filt
+                    hint_text: '*.ext'
+                    knsname: 'file_filt'
+                    on_text: root.controller and root.controller.update_item_settings(root.__self__, 'file_filt')
+            Label:
+                text_size: self.width, None
+                size_hint_y: None
+                padding: '15sp', '3dp'
+                height: self.texture_size[1]
+                text: root.in_ex_file
+            MinYGridLayout:
+                rows: 1
+                spacing: 5
+                Label:
+                    size_hint_x: None
+                    width: '45dp'
+                    text: 'Output'
+                ImageButton:
+                    size_hint_x: None
+                    width: self.height
+                    source: 'browse.png' if self.state == 'normal' else 'browse_down.png'
+                    on_release:
+                        app.filebrowser.target = (dirname(out_filepat.text) if isfile(out_filepat.text) else out_filepat.text) if out_filepat.text else ''
+                        app.filebrowser.dirselect = True
+                        app.filebrowser.multiselect = False
+                        app.filebrowser.callback = partial(app.assign_path, out_filepat, fileselect=True)
+                        app.filebrowser.open()
+                KNSizedTextInput:
+                    id: out_filepat
+                    hint_text: 'Directory'
+                    knsname: 'out_filepat'
+                    on_text: root.controller and root.controller.update_item_settings(root.__self__, 'out_filepat')
+            Label:
+                text: root.out_ex_file
+                text_size: self.width, None
+                size_hint_y: None
+                padding: '15sp', '3dp'
+                height: self.texture_size[1]
+        ImageButton:
+            size_hint_x: None
+            width: self.height
+            source: 'settings.png' if self.state == 'normal' else 'settings_down.png'
+            on_release: root.controller.show_settings(root)
+
+
+<VideoConverter>:
+    rows: 1
+    knspace: 'fork'
+    knsname: 'convert_root'
+    error_output: error_output
+    GridLayout:
+        cols: 1
+        spacing: '15dp'
+        padding: '15dp'
+        Splitter:
+            sizable_from: 'bottom'
+            size_hint_y: None
+            min_size: '150dp'
+            max_size: min(4 * root.height / 5., container.height)
+            ScrollView:
+                scroll_type: ['bars']
+                bar_width: '15dp'
+                do_scroll_x: False
+                GridLayout:
+                    size_hint_y: None
+                    height: self.minimum_height + 25
+                    spacing: '15dp'
+                    cols: 1
+                    id: container
+        ScrollView:
+            scroll_type: ['bars']
+            bar_width: '15dp'
+            do_scroll_x: False
+            MinYGridLayout:
+                cols: 1
+                id: res_container
+    ScrollView:
+        do_scroll: False, True
+        scroll_type: ['bars']
+        bar_width: '15dp'
+        size_hint_x: None
+        width: bar.width
+        GridLayout:
+            id: bar
+            cols: 1
+            size_hint: None, None
+            width: '70dp'
+            height: self.minimum_height
+            spacing: ['15dp']
+            ImageButton:
+                size_hint_y: None
+                height: self.width
+                source: 'browse.png' if self.state == 'normal' else 'browse_down.png'
+                on_release:
+                    app.filebrowser.target = dirname(root.controller.settings_path)
+                    app.filebrowser.dirselect = False
+                    app.filebrowser.multiselect = False
+                    app.filebrowser.callback = partial(root.controller.ui_config, True)
+                    app.filebrowser.open()
+            ImageButton:
+                size_hint_y: None
+                height: self.width
+                source: 'save.png' if self.state == 'normal' else 'save_down.png'
+                on_release:
+                    app.filebrowser.target = dirname(root.controller.settings_path)
+                    app.filebrowser.dirselect = False
+                    app.filebrowser.multiselect = False
+                    app.filebrowser.callback = partial(root.controller.ui_config, False)
+                    app.filebrowser.open()
+            ImageButton:
+                size_hint_y: None
+                height: self.width
+                source: 'add.png' if self.state == 'normal' else 'add_down.png'
+                on_release: root.controller.add_group()
+
+
+<ConverterSettings@KNSpaceBehavior+Popup>:
+    knspace: 'fork'
+    knsname: 'popup'
+    title: 'Converter settings'
+    auto_dismiss: False
+    size_hint: None, None
+    height: min(self.parent.height - 100, grid.height + 100) if self.parent else 0
+    width: grid.minimum_width
+    ScrollView:
+        GridLayout:
+            id: grid
+            size_hint: None, None
+            size: self.minimum_size
+            cols: 1
+            Label:
+                size_hint: None, None
+                size: 400, 90
+            BoxLayout:
+                size_hint_y: None
+                height: '45dp'
+                Widget
+                Button:
+                    padding: '20dp', 0
+                    size_hint_x: None
+                    width: self.texture_size[0]
+                    text: 'Delete'
+                    on_release: root.controller.delete_group(root.item.__self__)
+                Button:
+                    padding: '20dp', 0
+                    size_hint_x: None
+                    width: self.texture_size[0]
+                    text: 'Close'
+                    on_release: root.dismiss()
+                Widget:
+                    size_hint_x: .1
+
+
+
+
+<ProcessInpurr@Widget>:
     _nothing_here: setattr(app, 'proc_wgt', self.parent)
     size_hint_y: None
     height: path_in.line_height * 4 + 10
@@ -62,7 +260,7 @@
             text: ' '
 
 
-<ProcessCut@ColoredBoxLayout>:
+<ProcessCrr@Widget>:
     size_hint: None, None
     width: start.width + start_label.width + end.width + end_label.width + 10
     height: start.line_height * 2 + 10
@@ -98,7 +296,7 @@
         text: str(app.proc_wgt.input_end) if app.proc_wgt.input_end else ''
         on_text: app.proc_wgt.input_end = self.text
 
-<ProcessSettings@ColoredStackLayout>:
+<ProcessSettinrr@Widget>:
     size_hint_y: None
     height: self.minimum_height
     back_color: (204 / 255., 9 / 255., 226 / 255., .05)
@@ -210,7 +408,7 @@
         disabled: app.proc_wgt.ext_running
         on_text: app.proc_wgt.add_command = self.text
 
-<ProcessStatus@StackLayout>:
+<ProcessStatrr@Widget>:
     orientation: 'bt-rl'
     size_hint_y: None
     height: '150dp'
@@ -272,7 +470,7 @@
         font_size: max(self.height, 12)
         text: app.proc_wgt.remaining_time
 
-<PreProcess@ColoredBoxLayout>:
+<PreProcerr@Widget>:
     size_hint_y: None
     height: command.line_height + command.padding[1] * 2 + self.padding[1] * 2
     spacing: 5
@@ -299,7 +497,7 @@
         text: app.proc_wgt.pre_process_pat
         on_text: app.proc_wgt.pre_process_pat = self.text
 
-<Processor>:
+<Processorrr@Widget>:
     padding: [3]
     cols: 1
     ProcessInput

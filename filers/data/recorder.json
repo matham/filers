@@ -1,0 +1,89 @@
+{
+    "player0": {
+        "cls": "FFmpeg",
+        "dshow_opt": "",
+        "dshow_true_filename": "",
+        "file_fmt": "dshow",
+        "icodec": "",
+        "metadata_play": [
+            "",
+            0,
+            0,
+            0
+        ],
+        "metadata_play_used": [
+            "",
+            0,
+            0,
+            0
+        ],
+        "metadata_record": [
+            "",
+            0,
+            0,
+            0
+        ],
+        "play_filename": "",
+        "record_directory": "C:\\Users\\Matthew Einhorn",
+        "record_fname": "video{}.avi",
+        "record_fname_count": "0"
+    },
+    "player1": {
+        "cls": "RTV",
+        "metadata_play": [
+            "gray",
+            0,
+            0,
+            0
+        ],
+        "metadata_play_used": [
+            "gray",
+            0,
+            0,
+            0
+        ],
+        "metadata_record": [
+            "",
+            0,
+            0,
+            0
+        ],
+        "pipe_name": "filers_rtv",
+        "port": 0,
+        "record_directory": "C:\\Users\\Matthew Einhorn",
+        "record_fname": "video{}.avi",
+        "record_fname_count": "0",
+        "remote_computer_name": "",
+        "video_fmt": "full_NTSC"
+    },
+    "player2": {
+        "cam_config_opts": {},
+        "cls": "PTGray",
+        "ip": "",
+        "metadata_play": [
+            "",
+            0,
+            0,
+            0
+        ],
+        "metadata_play_used": [
+            "",
+            0,
+            0,
+            0
+        ],
+        "metadata_record": [
+            "",
+            0,
+            0,
+            0
+        ],
+        "record_directory": "C:\\Users\\Matthew Einhorn",
+        "record_fname": "video{}.avi",
+        "record_fname_count": "0",
+        "serial": 0
+    },
+    "recorder": {
+        "cam_grid_rows": 2
+    }
+}

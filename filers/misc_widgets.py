@@ -1,62 +1,25 @@
+'''Widgets
+==========
+
+Various widgets used in Filers.
+'''
+
 import time
 from functools import partial
-
-from ffpyplayer.tools import get_best_pix_fmt
-from ffpyplayer.pic import SWScale
 
 from kivy.properties import (
     NumericProperty, ReferenceListProperty, ObjectProperty,
     ListProperty, StringProperty, BooleanProperty, DictProperty, AliasProperty,
     OptionProperty)
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.scatter import Scatter
-from kivy.uix.popup import Popup
-from kivy.graphics.texture import Texture
-from kivy.graphics import Rectangle, BindTexture
-from kivy.graphics.transformation import Matrix
-from kivy.graphics.fbo import Fbo
-from kivy.uix.behaviors import DragBehavior
-from kivy.uix.widget import Widget
-from kivy.uix.behaviors.knspace import KNSpaceBehavior
-from kivy.uix.behaviors.togglebutton import ToggleButtonBehavior
-from kivy.uix.stencilview import StencilView
-from kivy.uix.image import Image
-from kivy.uix.behaviors.button import ButtonBehavior
-from kivy.uix.behaviors.focus import FocusBehavior
-from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.spinner import Spinner
 from kivy.core.window import Keyboard
-from kivy.animation import Sequence, Animation
 from kivy.uix.checkbox import CheckBox
-from kivy.factory import Factory
-try:
-    from kivy.garden.filebrowser import FileBrowser
-except:
-    import os
-    if 'SPHINX_DOC_INCLUDE' not in os.environ:
-        raise
 from kivy.clock import Clock
 
-__all__ = ('PopupBrowser', 'CountDownTimer', 'BufferImage')
+__all__ = ('SilentCheckBox', 'CountDownTimer', 'ColoredSpinner')
 
 keycodes_nums = {v: k for k, v in Keyboard.keycodes.items()}
-
-
-class CallbackPopup(DragBehavior, Popup):
-    ''' A popup that contains the :class:`FileBrowser` class. It allows
-    selection of files and folders.
-    '''
-
-    parent = ObjectProperty(None, allownone=True, rebind=True)
-
-    callback = ObjectProperty(None, allownone=True)
-    ''' A function that gets called, if not `None`, when a file is selected
-    through the `on_success` and `on_submit` events of :class:`FileBrowser`.
-    :attr:`callback` will be reset to `None` when the FileBrowser popup is
-    dismissed. The parameters passed to the function is `path`, the current
-    path for the browser, and `selection`, the list of currently selected
-    files. Defaults to None.
-    '''
 
 
 class CountDownTimer(BoxLayout):
@@ -162,228 +125,3 @@ class ColoredSpinner(Spinner):
     def __init__(self, **kwargs):
         self.option_cls = partial(get_spinner_opt, self, self.option_cls)
         super(ColoredSpinner, self).__init__(**kwargs)
-
-
-class EventFocusBehavior(FocusBehavior):
-
-    __events__ = ('on_keypress', )
-
-    keys = ListProperty(['spacebar', 'escape', 'enter'])
-
-    def keyboard_on_key_down(self, window, keycode, text, modifiers):
-        if super(EventFocusBehavior, self).keyboard_on_key_down(
-                window, keycode, text, modifiers):
-            return True
-        if keycode[1] in self.keys:
-            self.dispatch('on_keypress', keycode[1])
-            return True
-
-    def on_keypress(self, key):
-        pass
-
-
-class BufferImage(Scatter):
-    ''' Class that displays an image and allows its manipulation using touch.
-    It receives an ffpyplayer :py:class:`~ffpyplayer.pic.Image` object.
-    '''
-
-    iw = NumericProperty(0.)
-    ''' The width of the input image. Defaults to zero.
-    '''
-    ih = NumericProperty(0.)
-    ''' The height of the input image. Defaults to zero.
-    '''
-    last_w = 0
-    ''' The width of the screen region available to display the image. Can be
-    used to determine if the screen size changed and we need to output a
-    different sized image. This gets set internally by :math:`update_img`.
-    Defaults to zero.
-    '''
-    last_h = 0
-    ''' The width of the screen region available to display the image. This
-    gets set internally by :math:`update_img`. Defaults to zero.
-    '''
-    fmt = ''
-    ''' The input format of the last image passed in. E.g. rgb24, yuv420p, etc.
-    '''
-
-    sw_src_fmt = ''
-
-    swscale = None
-
-    img = None
-    ''' Holds the last input :py:class:`~ffpyplayer.pic.Image`.
-    '''
-    img_texture = None
-    ''' The texture into which the images are blitted if not yuv420p.
-    Defaults to None.
-    '''
-    kivy_fmt = ''
-    ''' The last kivy color format type of the image. Defaults to `''`. '''
-    _tex_y = None
-    ''' The y texture into which the y plane of the images are blitted when
-    yuv420p. Defaults to None.
-    '''
-    _tex_u = None
-    ''' The u texture into which the u plane of the images are blitted when
-    yuv420p. Defaults to None.
-    '''
-    _tex_v = None
-    ''' The v texture into which the v plane of the images are blitted when
-    yuv420p. Defaults to None.
-    '''
-    _fbo = None
-    ''' The Fbo used when blitting yuv420p images. '''
-
-    YUV_RGB_FS = b'''
-    $HEADER$
-    uniform sampler2D tex_y;
-    uniform sampler2D tex_u;
-    uniform sampler2D tex_v;
-
-    void main(void) {
-        float y = texture2D(tex_y, tex_coord0).r;
-        float u = texture2D(tex_u, tex_coord0).r - 0.5;
-        float v = texture2D(tex_v, tex_coord0).r - 0.5;
-        float r = y + 1.402 * v;
-        float g = y - 0.344 * u - 0.714 * v;
-        float b = y + 1.772 * u;
-        gl_FragColor = vec4(r, g, b, 1.0);
-    }
-    '''
-    ''' The shader code used blitting yuv420p images.
-    '''
-
-    def update_img(self, img):
-        ''' Updates the screen with a new image.
-        '''
-        if img is None:
-            return
-
-        img_fmt = img.get_pixel_format()
-        img_w, img_h = img.get_size()
-
-        update = False
-        if self.iw != img_w or self.ih != img_h:
-            update = True
-
-        if img_fmt not in ('yuv420p', 'rgba', 'rgb24', 'gray'):
-            swscale = self.swscale
-            if img_fmt != self.sw_src_fmt or swscale is None or update:
-                ofmt = get_best_pix_fmt(
-                    img_fmt, ('yuv420p', 'rgba', 'rgb24', 'gray'))
-                self.swscale = swscale = SWScale(
-                    iw=img_w, ih=img_h, ifmt=img_fmt, ow=0, oh=0, ofmt=ofmt)
-                self.sw_src_fmt = img_fmt
-            img = swscale.scale(img)
-            img_fmt = img.get_pixel_format()
-
-        w, h = self.parent.size
-        if (not w) or not h:
-            self.img = img
-            return
-
-        if self.fmt != img_fmt:
-            self.fmt = img_fmt
-            self.kivy_ofmt = {'yuv420p': 'yuv420p', 'rgba': 'rgba',
-                              'rgb24': 'rgb', 'gray': 'luminance'}[img_fmt]
-            update = True
-
-        if update or w != self.last_w or h != self.last_h:
-            scalew, scaleh = w / float(img_w), h / float(img_h)
-            scale = min(min(scalew, scaleh), 1)
-            self.transform = Matrix()
-            self.apply_transform(Matrix().scale(scale, scale, 1),
-                                 post_multiply=True)
-            self.iw, self.ih = img_w, img_h
-            self.last_h = h
-            self.last_w = w
-
-        self.img = img
-        kivy_ofmt = self.kivy_ofmt
-
-        if update:
-            self.canvas.remove_group(str(self) + 'image_display')
-            if kivy_ofmt == 'yuv420p':
-                w2 = int(img_w / 2)
-                h2 = int(img_h / 2)
-                self._tex_y = Texture.create(size=(img_w, img_h),
-                                             colorfmt='luminance')
-                self._tex_u = Texture.create(size=(w2, h2),
-                                             colorfmt='luminance')
-                self._tex_v = Texture.create(size=(w2, h2),
-                                             colorfmt='luminance')
-                with self.canvas:
-                    self._fbo = fbo = Fbo(size=(img_w, img_h),
-                                          group=str(self) + 'image_display')
-                with fbo:
-                    BindTexture(texture=self._tex_u, index=1)
-                    BindTexture(texture=self._tex_v, index=2)
-                    Rectangle(size=fbo.size, texture=self._tex_y)
-                fbo.shader.fs = BufferImage.YUV_RGB_FS
-                fbo['tex_y'] = 0
-                fbo['tex_u'] = 1
-                fbo['tex_v'] = 2
-                tex = self.img_texture = fbo.texture
-                fbo.add_reload_observer(self.reload_buffer)
-            else:
-                tex = self.img_texture = Texture.create(
-                    size=(img_w, img_h), colorfmt=kivy_ofmt)
-                tex.add_reload_observer(self.reload_buffer)
-
-            tex.flip_vertical()
-            with self.canvas:
-                Rectangle(texture=tex, pos=(0, 0), size=(img_w, img_h),
-                          group=str(self) + 'image_display')
-
-        if kivy_ofmt == 'yuv420p':
-            dy, du, dv, _ = img.to_memoryview()
-            self._tex_y.blit_buffer(dy, colorfmt='luminance')
-            self._tex_u.blit_buffer(du, colorfmt='luminance')
-            self._tex_v.blit_buffer(dv, colorfmt='luminance')
-            self._fbo.ask_update()
-            self._fbo.draw()
-        else:
-            self.img_texture.blit_buffer(img.to_memoryview()[0],
-                                         colorfmt=kivy_ofmt)
-            self.canvas.ask_update()
-
-    def reload_buffer(self, *args):
-        ''' Reloads the last displayed image. It is called whenever the
-        screen size changes or the last image need to be recalculated.
-        '''
-        self.update_img(self.img)
-
-
-class ErrorIndicator(ButtonBehavior, Widget):
-
-    display = None
-
-    seen = BooleanProperty(True)
-
-    alpha = NumericProperty(1.)
-
-    queue = ListProperty([])
-
-    anim = None
-
-    def __init__(self, **kw):
-        super(ErrorIndicator, self).__init__(**kw)
-        a = self.anim = Sequence(
-            Animation(t='in_bounce', alpha=1.),
-            Animation(t='out_bounce', alpha=0))
-        a.repeat = True
-        self.display = Factory.ErrorLog(title='Error Log')
-
-    def on_queue(self, *largs):
-        display = self.display
-        cls = Factory.ErrorLabel
-        display.container.clear_widgets()
-        add = display.container.add_widget
-        q = self.queue
-        for t in q:
-            add(cls(text=t))
-
-        if q and self.seen:
-            self.seen = False
-            self.anim.start(self)

@@ -1,4 +1,7 @@
-'''Provides a class that manipulates files en-masse using FFmpeg. It can
+'''Video Processing
+=====================
+
+Provides a class that manipulates files en-masse using FFmpeg. It can
 compress/uncompress/merge/concatenate or perform other tasks on video files.
 
 In order to use this module, the ffmpeg binaries need to be installed in the
@@ -15,12 +18,11 @@ Keyboard Keys
     Stop the processing.
 '''
 
-__all__ = ('Processor', )
-
-import os
+import sys
+import json
 from os import makedirs
 from os.path import join, exists, expanduser, abspath, isdir, isfile, dirname,\
-split, splitext, getsize, sep
+    split, splitext, getsize, sep
 import logging
 from threading import Thread
 import time
@@ -30,18 +32,231 @@ import subprocess as sp
 import tempfile
 import re
 from re import match, escape, sub
+from time import sleep
 from collections import defaultdict
-from kivy.compat import PY2
+
 from kivy.clock import Clock
+from kivy.compat import clock
+from kivy.factory import Factory
+from kivy.uix.behaviors.knspace import KNSpaceBehavior
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.popup import Popup
+from kivy.logger import Logger
+from kivy.event import EventDispatcher
 from kivy.properties import (NumericProperty, ReferenceListProperty,
     ObjectProperty, ListProperty, StringProperty, BooleanProperty,
     DictProperty, AliasProperty, OptionProperty, ConfigParserProperty)
-from filers.tools import (str_to_float, pretty_space, pretty_time, KivyQueue,
-                          to_bool, ConfigProperty)
-from filers import FilerException, config_name
-from time import sleep
 
+from cplcom import config_name
+from filers.tools import (str_to_float, pretty_space, pretty_time, KivyQueue,
+                          to_bool, ConfigProperty, byteify)
+from filers import root_data_path
+
+__all__ = ('VideoConverter', )
+
+
+def exit_converter():
+    c = VideoConverterController.converter_singleton
+    if c:
+        try:
+            c.stop(terminate=True)
+        except:
+            pass
+
+        try:
+            c.save_config()
+        except Exception as e:
+            Logger.error('Converter: {}'.format(e))
+            Logger.exception(e)
+
+
+class VideoConverterController(EventDispatcher):
+
+    settings_path = ConfigParserProperty(
+        join(root_data_path, 'converter.json'), 'Filers',
+        'converter_settings_path', config_name)
+
+    conversion_group_settings = ListProperty([])
+
+    conversion_group_widgets = []
+
+    converter_singleton = None
+
+    converter_view = ObjectProperty(None)
+
+    container = ObjectProperty(None)
+
+    res_container = ObjectProperty(None)
+
+    settings_display = None
+
+    current_group_i = None
+
+    files = []
+
+    processed = 0
+
+    processing = False
+
+    def __init__(self, **kwargs):
+        super(VideoConverterController, self).__init__(**kwargs)
+        VideoConverterController.converter_singleton = self
+        self.settings_display = Factory.ConverterSettings(controller=self)
+        self.load_config(self.settings_path)
+        self.conversion_group_settings = []
+        self.conversion_group_widgets = []
+
+    @staticmethod
+    def get_window_title():
+        c = VideoConverterController.converter_singleton
+        if not c or not c.files or len(c.files) == c.processed:
+            return ''
+
+        s = ' - Converter'
+        if not c.processed:
+            s += ' ({})'.format(len(c.files))
+        else:
+            s += ' ({}/{})'.format(len(c.processed, c.files))
+
+        if not c.processing:
+            s += ' PAUSED'
+        return s
+
+    def log_error(self, msg=None, e=None, exc_info=None, level='error'):
+        q = self.converter_view.error_output.queue
+        l = getattr(Logger, level)
+        val = msg
+
+        if msg:
+            if e:
+                val = '{}: {}'.format(msg, repr(e))
+                l(val)
+            else:
+                l(msg)
+
+        if exc_info is not None:
+            Logger.error(e, exc_info=exc_info)
+
+        if val:
+            q.add_item(val)
+
+    def load_config(self, filename):
+        if not isfile(filename):
+            return
+        filename = abspath(filename)
+
+        for c in self.conversion_group_widgets[:]:
+            self.delete_group(c)
+
+        try:
+            with open(filename) as fh:
+                global_opt, convert_opt = json.load(fh)
+            global_opt, convert_opt = byteify(global_opt), byteify(convert_opt)
+
+            for k, v in global_opt.items():
+                setattr(self, k, v)
+            for d in convert_opt:
+                self.add_group(settings=d, show=False)
+        except Exception as e:
+            self.log_error(e=e, exc_info=sys.exc_info(), msg='Loading config')
+        else:
+            if filename:
+                self.settings_path = filename
+
+    def save_config(self, filename=None):
+        filename = filename or self.settings_path
+        if not filename:
+            return
+
+        try:
+            with open(filename, 'w') as fh:
+                json.dump(
+                    (self.get_config_dict(), self.conversion_group_settings),
+                    fh, sort_keys=True, indent=4, separators=(',', ': '))
+        except Exception as e:
+            self.log_error(e=e, exc_info=sys.exc_info(), msg='Loading config')
+        else:
+            if filename:
+                self.settings_path = filename
+
+    def ui_config(self, load, path, selection, filename):
+        fname = abspath(join(path, filename))
+        if load:
+            self.load_config(fname)
+        else:
+            self.save_config(fname)
+
+    def get_config_dict(self):
+        attrs = []
+        return {k: getattr(self, k) for k in attrs}
+
+    def add_group(self, settings={}, show=True):
+        item = ConversionGroup(controller=self)
+        settings = self.settings_display.get_settings(settings)
+        self.conversion_group_widgets.append(item)
+        self.conversion_group_settings.append(settings)
+        self.container.add_widget(item)
+
+        if show:
+            self.show_settings(item)
+
+    def delete_group(self, item):
+        self.settings_display.dismiss()
+        i = self.conversion_group_widgets.index(item)
+        del self.conversion_group_settings[i]
+        del self.conversion_group_widgets[i]
+        self.container.remove_widget(item)
+
+    def show_settings(self, item):
+        self.settings_display.item = item
+        self.settings_display.open()
+
+    def stop(self, terminate=False):
+        pass
+
+    def update_item_settings(self, item, src):
+        pass
+
+
+class ConversionGroup(KNSpaceBehavior, GridLayout):
+
+    controller = ObjectProperty(None, rebind=True)
+
+    in_ex_file = StringProperty('')
+
+    out_ex_file = StringProperty('')
+
+
+class ConverterSettings(KNSpaceBehavior, Popup):
+
+    controller = ObjectProperty(None, rebind=True)
+
+    item = ObjectProperty(None, allownone=True)
+
+    def get_settings(self, settings={}):
+        s = {}
+        s.update(settings)
+        return s
+
+    def set_settings(self, settings={}):
+        pass
+
+
+class VideoConverter(KNSpaceBehavior, GridLayout):
+
+    def __init__(self, **kwargs):
+        super(VideoConverter, self).__init__(**kwargs)
+
+        def init(*largs):
+            self.controller = VideoConverterController(
+                converter_view=self, container=self.ids.container,
+                res_container=self.ids.res_container)
+        Clock.schedule_once(init, 0)
+
+    controller = ObjectProperty(None, rebind=True)
+
+
+"""
 
 unicode_type = unicode if PY2 else str
 '''
@@ -886,3 +1101,4 @@ class Processor(GridLayout):
         put('done', None)
 
         self.running = False
+"""
