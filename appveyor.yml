@@ -1,4 +1,5 @@
 version: 1.0.{build}
+image: Unstable
 environment:
   access_token:
     secure: H8F1UMqC4QixM9NbnHewuineXTu860e3WhkpgMzui6xQmCv2qyXd4BDonVrrW5Iv
@@ -11,6 +12,8 @@ environment:
     BITTNESS: 64
   - PYVER: 34
     BITTNESS: 64
+install:
+- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-desktop.ps1'))
 build_script:
 - ps: >-
     iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/matham/packaging/master/check_error.ps1'))
@@ -30,6 +33,8 @@ build_script:
     python -c "import sys;print('Python version is {}'.format(sys.version))"
 
     Check-Error
+
+    $env:USE_SDL2 = 1
 
     python -c "with open(r'$PYTHON_ROOT\Lib\distutils\distutils.cfg', 'wb') as fh: fh.write(b'[build]\ncompiler = mingw32\n')"
 
@@ -54,6 +59,8 @@ build_script:
     python -m pip install pybarst ffpyplayer pyflycap2 https://github.com/matham/cplcom/archive/master.zip
 
     Check-Error
+
+    $env:KIVY_DOC_INCLUDE = 1
 
     python -m PyInstaller packaging/filers.spec
 
@@ -98,5 +105,3 @@ on_success:
     if ($env:BITTNESS -eq "64" -and $env:PYVER -eq "27") {
         iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/matham/packaging/master/cpl_appveyor_gh_docs.ps1'))
     }
-on_finish:
-- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
