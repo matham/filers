@@ -57,8 +57,6 @@ build_script:
 
     python -m PyInstaller packaging/filers.spec
 
-    Check-Error
-
     cd dist
 
     7z a "..\deploy\filers.7z" filers
