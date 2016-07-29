@@ -1,3 +1,7 @@
 doc/build/
 *.pyc
 filers/filers.ini
+.project
+.pydevproject
+.settings/
+Filers.egg-info/

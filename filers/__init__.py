@@ -7,7 +7,7 @@ Application that can record and process video.
 import sys
 from os.path import dirname, join
 
-__all__ = ('FilerException', )
+__all__ = ('FilerException', 'root_data_path')
 
 __version__ = '0.2-dev'
 
