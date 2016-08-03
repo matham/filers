@@ -256,9 +256,7 @@ class FilersPlayer(object):
 
     def write_widget_settings(self):
         kn = self.players.settings_display.knspace
-        name = self.cls
-        kn.source_type.current = name
-        kn.popup.ids[name].state = 'down'
+        kn.popup.ids[self.cls].trigger_action(0)
         kn.record_pix_fmt.text, kn.record_w.text, \
             kn.record_h.text, kn.record_rate.text = \
             ((str(x) if x else '') for x in self.metadata_record)
@@ -537,9 +535,14 @@ class PlayerView(KNSpaceBehavior, EventFocusBehavior, BoxLayout):
         if player.record_state == 'recording':
             elapsed = pretty_time(max(0, clock() - player.ts_record))
             size = pretty_space(player.size_recorded)
-            skipped = player.frames_skipped
-            self.elapsed_recording = ('{}s ({}) [color=#FF0000]{}[/color]'.
-                                      format(elapsed, size, skipped))
+            self.elapsed_recording = (
+                '{}s ({}) [color=#FF0000]{}[/color] {}fps'.
+                format(elapsed, size, player.frames_skipped,
+                       int(player.real_rate)))
+        else:
+            s = self.elapsed_recording.rsplit(' ', 1)[0].strip()
+            self.elapsed_recording = '{} {}fps'.format(s,
+                                                       int(player.real_rate))
 
         _, (ofmt, ow, oh, orate) = player.compute_recording_opts()
         obps = sum(get_image_size(ofmt, ow, oh)) * orate

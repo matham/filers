@@ -33,14 +33,14 @@
             rows: 1
             size_hint: None, None
             width: self.minimum_width
-            height: '80dp'
-            padding: ['15dp']
-            spacing: ['10dp']
+            height: max(self.minimum_height, 45)
+            padding: ['5dp']
+            spacing: ['15dp']
             Label:
-                padding: '15dp', '15dp'
-                text: root.player.cls
+                padding: '5dp', '5dp'
+                text: root.player.player_summery
                 size_hint_x: None
-                width: self.texture_size[1]
+                width: self.texture_size[0]
             ImageButton:
                 size_hint_x: None
                 width: self.height
@@ -59,21 +59,17 @@
                     Line:
                         circle: self.center_x, self.center_y, self.height / 2.
             Label:
-                padding: '15dp', '15dp'
+                padding: '5dp', '5dp'
                 text: root.disk_stat
                 size_hint: None, None
                 size: self.texture_size
                 markup: True
-            KNToggleButton:
+            ImageToggleButton:
                 size_hint_x: None
                 width: self.height
                 knsname: 'play'
-                background_normal: 'play.png'
-                background_down: 'pause.png'
-                background_disabled_normal: 'play.png'
-                background_disabled_down: 'pause.png'
+                source: 'play.png' if self.state == 'normal' else 'pause.png'
                 disabled: not root.player or not not root.player.config_active
-                background_color: [.2, .2, .2, 1] if self.disabled else [1, 1, 1, 1]
                 on_release: root.player.play() if self.state == 'down' else root.player.stop()
         GridLayout:
             size_hint_y: None
@@ -125,7 +121,7 @@
                 size: self.minimum_size
                 right: self.size and (display.width - 20)
                 top: self.size and (display.height - 20)
-                spacing: ['20dp']
+                spacing: ['15dp']
                 ImageToggleButton:
                     id: record
                     knsname: 'record'
@@ -144,18 +140,13 @@
                         app.filebrowser.callback = root.player.save_screenshot
                         app.filebrowser.ids.file_browser.ids.file_text.text = path_fname.fmt_text.split('.')[0] + '.bmp'
                         app.filebrowser.open()
-                Widget:
+                Label:
                     size_hint: None, None
-                    height: elapsed_record.texture_size[1]
-                    width: max(self.width, elapsed_record.texture_size[0])
-                    Label:
-                        size: self.parent.size
-                        id: elapsed_record
-                        knsname: 'elapsed_record'
-                        padding: '15dp', '15dp'
-                        text: root.elapsed_recording
-                        pos: self.parent.pos
-                        markup: True
+                    height: self.texture_size[1]
+                    width: max(self.width, self.texture_size[0])
+                    padding: '5dp', '5dp'
+                    text: root.elapsed_recording
+                    markup: True
 
 
 <PlayerRoot>:
@@ -257,7 +248,9 @@
 
 
 <VideoScreenSelect@RadioLabeledCheck>:
-    on_release: self.knspace.popup.players.replace_player_cls(self.knspace.popup.player, self.text)
+    on_release:
+        self.knspace.popup.players.replace_player_cls(self.knspace.popup.player, self.text)
+        self.knspace.source_type.current = self.text
     group: 'video_source'
 
 <PixelSizeSelect@BorderedGridLayout>:
