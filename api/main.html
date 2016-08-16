@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Filers App &mdash; Filers 0.2-dev documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.2-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Filers 0.2-dev documentation" href="../index.html" />
+    <link rel="up" title="The Filers API" href="api.html" />
+    <link rel="next" title="Recorder" href="record.html" />
+    <link rel="prev" title="Filers" href="filers.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-filers.main"><span id="main-api"></span></span><div class="section" id="filers-app">
+<h1>Filers App<a class="headerlink" href="#filers-app" title="Permalink to this headline">¶</a></h1>
+<p>The main app.</p>
+<dl class="class">
+<dt id="filers.main.FilersApp">
+<em class="property">class </em><code class="descclassname">filers.main.</code><code class="descname">FilersApp</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#filers.main.FilersApp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">cplcom.app.CPLComApp</span></code></p>
+<p>The filer app class.</p>
+<dl class="method">
+<dt id="filers.main.FilersApp.assign_path">
+<code class="descname">assign_path</code><span class="sig-paren">(</span><em>text</em>, <em>path</em>, <em>selection</em>, <em>filename</em>, <em>fileselect=False</em>, <em>quote=False</em><span class="sig-paren">)</span><a class="headerlink" href="#filers.main.FilersApp.assign_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a list of selected files and returns it as a string with
+possibly quoted filenames.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><cite>text</cite>: kivy Label</dt>
+<dd><p class="first last">A object whose <cite>text</cite> parameter will be set with the resulting
+string.</p>
+</dd>
+<dt><cite>path</cite>: str</dt>
+<dd><p class="first last">The root path in which the filenames in <cite>selection</cite> are
+contained.</p>
+</dd>
+<dt><cite>filename</cite>: str</dt>
+<dd><p class="first last">The text in the filename filed in the browser.</p>
+</dd>
+<dt><cite>selection</cite>: list</dt>
+<dd><p class="first last">A list of filenames currently selected.</p>
+</dd>
+<dt><cite>fileselect</cite>: bool</dt>
+<dd><p class="first last">Whether we would convert all the selected files into a
+their directories, e.g. if only directories should be selected.
+Defaults to False.</p>
+</dd>
+<dt><cite>quote</cite>: bool</dt>
+<dd><p class="first last">Whether filenames with spaces in them should be quoted with
+<cite>&#8220;</cite>. Defaults to False.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="filers.main.FilersApp.set_tittle">
+<code class="descname">set_tittle</code><span class="sig-paren">(</span><em>*largs</em><span class="sig-paren">)</span><a class="headerlink" href="#filers.main.FilersApp.set_tittle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the title of the window using the currently running
+tab. This is called at 1Hz.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt id="filers.main.run_app">
+<code class="descclassname">filers.main.</code><code class="descname">run_app</code><em class="property"> = &lt;functools.partial object at 0x000000000442B818&gt;</em><a class="headerlink" href="#filers.main.run_app" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that starts the GUI and the entry point for
+the main script.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Filers</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=matham&repo=filers&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#packaging">Packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config.html">filers Config</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">The Filers API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="filers.html">Filers</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Filers App</a></li>
+<li class="toctree-l2"><a class="reference internal" href="record.html">Recorder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="process.html">Video Processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools.html">Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="misc_widgets.html">Widgets</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="api.html">The Filers API</a><ul>
+      <li>Previous: <a href="filers.html" title="previous chapter">Filers</a></li>
+      <li>Next: <a href="record.html" title="next chapter">Recorder</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/main.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/api/main.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/matham/filers" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

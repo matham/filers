@@ -1,0 +1,294 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>filers Config &mdash; Filers 0.2-dev documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.2-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Filers 0.2-dev documentation" href="index.html" />
+    <link rel="next" title="The Filers API" href="api/api.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="filers-config">
+<h1>filers Config<a class="headerlink" href="#filers-config" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">FFMpeg:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt><cite>cls</cite>:</dt>
+<dd><p class="first">(internal) The string associated with the player source used.</p>
+<p class="last">It is one of <code class="docutils literal"><span class="pre">FFMpeg</span></code>, <code class="docutils literal"><span class="pre">RTV</span></code>, or <code class="docutils literal"><span class="pre">PTGray</span></code> indicating the camera
+being used.</p>
+</dd>
+<dt><cite>dshow_opt</cite>:</dt>
+<dd>The camera options associated with <code class="xref py py-attr docutils literal"><span class="pre">dshow_true_filename</span></code> when
+dshow is used.</dd>
+<dt><cite>dshow_true_filename</cite>:</dt>
+<dd>The real and complete filename of the direct show (webcam) device.</dd>
+<dt><cite>file_fmt</cite>: dshow</dt>
+<dd>The format used to play the video. Can be empty or a format e.g.
+<code class="docutils literal"><span class="pre">dshow</span></code> for webcams.</dd>
+<dt><cite>icodec</cite>:</dt>
+<dd>The codec used to open the video stream with.</dd>
+<dt><cite>metadata_play</cite>: None</dt>
+<dd>(internal) Describes the video metadata of the video player.</dd>
+<dt><cite>metadata_play_used</cite>: None</dt>
+<dd>(internal) Describes the video metadata of the video player that is
+actually used by the player.</dd>
+<dt><cite>metadata_record</cite>: None</dt>
+<dd>(internal) Describes the video metadata of the video recorder.</dd>
+<dt><cite>play_filename</cite>:</dt>
+<dd>The filename of the media being played. Can be e.g. a url etc.</dd>
+<dt><cite>record_directory</cite>: C:Usersappveyor</dt>
+<dd>The directory into which videos should be saved.</dd>
+<dt><cite>record_fname</cite>: video{}.avi</dt>
+<dd><p class="first">The filename to be used to record the next video.</p>
+<p class="last">If <code class="docutils literal"><span class="pre">{}</span></code> is present in the filename, it&#8217;ll be replaced with the value of
+<code class="xref py py-attr docutils literal"><span class="pre">record_fname_count</span></code> which auto increments after every video, when
+used.</p>
+</dd>
+<dt><cite>record_fname_count</cite>: 0</dt>
+<dd><p class="first">A counter that auto increments by one after every recorded video.</p>
+<p class="last">Used to give unique filenames for each video file.</p>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">PTGray:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt><cite>cam_config_opts</cite>: {}</dt>
+<dd>The configuration options used to configure the camera after opening.</dd>
+<dt><cite>cls</cite>:</dt>
+<dd><p class="first">(internal) The string associated with the player source used.</p>
+<p class="last">It is one of <code class="docutils literal"><span class="pre">FFMpeg</span></code>, <code class="docutils literal"><span class="pre">RTV</span></code>, or <code class="docutils literal"><span class="pre">PTGray</span></code> indicating the camera
+being used.</p>
+</dd>
+<dt><cite>ip</cite>:</dt>
+<dd>The ip address of the camera to open. Either <code class="xref py py-attr docutils literal"><span class="pre">ip</span></code> or
+<code class="xref py py-attr docutils literal"><span class="pre">serial</span></code> must be provided.</dd>
+<dt><cite>metadata_play</cite>: None</dt>
+<dd>(internal) Describes the video metadata of the video player.</dd>
+<dt><cite>metadata_play_used</cite>: None</dt>
+<dd>(internal) Describes the video metadata of the video player that is
+actually used by the player.</dd>
+<dt><cite>metadata_record</cite>: None</dt>
+<dd>(internal) Describes the video metadata of the video recorder.</dd>
+<dt><cite>record_directory</cite>: C:Usersappveyor</dt>
+<dd>The directory into which videos should be saved.</dd>
+<dt><cite>record_fname</cite>: video{}.avi</dt>
+<dd><p class="first">The filename to be used to record the next video.</p>
+<p class="last">If <code class="docutils literal"><span class="pre">{}</span></code> is present in the filename, it&#8217;ll be replaced with the value of
+<code class="xref py py-attr docutils literal"><span class="pre">record_fname_count</span></code> which auto increments after every video, when
+used.</p>
+</dd>
+<dt><cite>record_fname_count</cite>: 0</dt>
+<dd><p class="first">A counter that auto increments by one after every recorded video.</p>
+<p class="last">Used to give unique filenames for each video file.</p>
+</dd>
+<dt><cite>serial</cite>: 0</dt>
+<dd>The serial number of the camera to open. Either <code class="xref py py-attr docutils literal"><span class="pre">ip</span></code> or
+<code class="xref py py-attr docutils literal"><span class="pre">serial</span></code> must be provided.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">RTV:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt><cite>cls</cite>:</dt>
+<dd><p class="first">(internal) The string associated with the player source used.</p>
+<p class="last">It is one of <code class="docutils literal"><span class="pre">FFMpeg</span></code>, <code class="docutils literal"><span class="pre">RTV</span></code>, or <code class="docutils literal"><span class="pre">PTGray</span></code> indicating the camera
+being used.</p>
+</dd>
+<dt><cite>metadata_play</cite>: None</dt>
+<dd>(internal) Describes the video metadata of the video player.</dd>
+<dt><cite>metadata_play_used</cite>: None</dt>
+<dd>(internal) Describes the video metadata of the video player that is
+actually used by the player.</dd>
+<dt><cite>metadata_record</cite>: None</dt>
+<dd>(internal) Describes the video metadata of the video recorder.</dd>
+<dt><cite>pipe_name</cite>: filers_rtv</dt>
+<dd>The internal name used to communicate with Barst. When running remotely,
+the name is used to discover Barst.</dd>
+<dt><cite>port</cite>: 0</dt>
+<dd>The RTV port on the card to use.</dd>
+<dt><cite>record_directory</cite>: C:Usersappveyor</dt>
+<dd>The directory into which videos should be saved.</dd>
+<dt><cite>record_fname</cite>: video{}.avi</dt>
+<dd><p class="first">The filename to be used to record the next video.</p>
+<p class="last">If <code class="docutils literal"><span class="pre">{}</span></code> is present in the filename, it&#8217;ll be replaced with the value of
+<code class="xref py py-attr docutils literal"><span class="pre">record_fname_count</span></code> which auto increments after every video, when
+used.</p>
+</dd>
+<dt><cite>record_fname_count</cite>: 0</dt>
+<dd><p class="first">A counter that auto increments by one after every recorded video.</p>
+<p class="last">Used to give unique filenames for each video file.</p>
+</dd>
+<dt><cite>remote_computer_name</cite>:</dt>
+<dd>The name of the computer running Barst, if it&#8217;s a remote computer.
+Otherwise it&#8217;s the empty string.</dd>
+<dt><cite>video_fmt</cite>: full_NTSC</dt>
+<dd><p class="first">The video format of the video being played.</p>
+<p>It can be one of the keys in:</p>
+<div class="last highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;full_NTSC&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">640</span><span class="p">,</span> <span class="mi">480</span><span class="p">),</span> <span class="s1">&#39;full_PAL&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">768</span><span class="p">,</span> <span class="mi">576</span><span class="p">),</span>
+<span class="s1">&#39;CIF_NTSC&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">320</span><span class="p">,</span> <span class="mi">240</span><span class="p">),</span> <span class="s1">&#39;CIF_PAL&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">384</span><span class="p">,</span> <span class="mi">288</span><span class="p">),</span>
+<span class="s1">&#39;QCIF_NTSC&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">160</span><span class="p">,</span> <span class="mi">120</span><span class="p">),</span> <span class="s1">&#39;QCIF_PAL&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">192</span><span class="p">,</span> <span class="mi">144</span><span class="p">)}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">app:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt><cite>inspect</cite>: False</dt>
+<dd>Enables GUI inspection. If True, it is activated by hitting ctrl-e in
+the GUI.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">recorder:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt><cite>cam_grid_rows</cite>: 2</dt>
+<dd>The number of rows into which to split the video recorders when there&#8217;s
+more than one recorder open.</dd>
+</dl>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Filers</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=matham&repo=filers&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#packaging">Packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">filers Config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/api.html">The Filers API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="getting_started.html" title="previous chapter">Getting Started</a></li>
+      <li>Next: <a href="api/api.html" title="next chapter">The Filers API</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/config.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/config.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/matham/filers" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

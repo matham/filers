@@ -1,0 +1,284 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Utils &mdash; Filers 0.2-dev documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.2-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Filers 0.2-dev documentation" href="../index.html" />
+    <link rel="up" title="The Filers API" href="api.html" />
+    <link rel="next" title="Widgets" href="misc_widgets.html" />
+    <link rel="prev" title="Video Processing" href="process.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-filers.tools"><span id="tools-api"></span></span><div class="section" id="utils">
+<h1>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h1>
+<p>A module that provides common tools.</p>
+<dl class="class">
+<dt id="filers.tools.KivyQueue">
+<em class="property">class </em><code class="descclassname">filers.tools.</code><code class="descname">KivyQueue</code><span class="sig-paren">(</span><em>notify_func</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#filers.tools.KivyQueue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">Queue.Queue</span></code></p>
+<p>A Multithread safe class that calls a callback whenever an item is added
+to the queue. Instead of having to poll or wait, you could wait to get
+notified of additions.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">callabck</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Added&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">q</span> <span class="o">=</span> <span class="n">KivyQueue</span><span class="p">(</span><span class="n">notify_func</span><span class="o">=</span><span class="n">callabck</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="mi">55</span><span class="p">)</span>
+<span class="go">Added</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="go">(&#39;test&#39;, 55)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>notify_func</strong> &#8211; The function to call when adding to the queue</td>
+</tr>
+</tbody>
+</table>
+<dl class="exception">
+<dt id="filers.tools.KivyQueue.Empty">
+<em class="property">exception </em><code class="descname">Empty</code><a class="headerlink" href="#filers.tools.KivyQueue.Empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></code></p>
+<p>Exception raised by Queue.get(block=0)/get_nowait().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filers.tools.KivyQueue.get">
+<code class="descclassname">KivyQueue.</code><code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#filers.tools.KivyQueue.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the next items in the queue, if non-empty, otherwise a
+<code class="xref py py-attr docutils literal"><span class="pre">Queue.Empty</span></code> exception is raised.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="filers.tools.KivyQueue.put">
+<code class="descclassname">KivyQueue.</code><code class="descname">put</code><span class="sig-paren">(</span><em>key</em>, <em>val</em><span class="sig-paren">)</span><a class="headerlink" href="#filers.tools.KivyQueue.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a (key, value) tuple to the queue and calls the callback function.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="filers.tools.str_to_float">
+<code class="descclassname">filers.tools.</code><code class="descname">str_to_float</code><span class="sig-paren">(</span><em>strnum</em>, <em>minval=0</em>, <em>maxval=2147483647L</em>, <em>err_max=True</em>, <em>val_type=&lt;type 'float'&gt;</em>, <em>err_val=None</em><span class="sig-paren">)</span><a class="headerlink" href="#filers.tools.str_to_float" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a integer or float given a string possibly containing a number.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">str_to_float</span><span class="p">(</span><span class="s1">&#39;9.578&#39;</span><span class="p">)</span>
+<span class="go">9.578</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">str_to_float</span><span class="p">(</span><span class="s1">&#39;9.a578&#39;</span><span class="p">,</span> <span class="n">err_max</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="go">0</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>strnum</strong> &#8211; The string containing the number.</li>
+<li><strong>minval</strong> &#8211; The minimum value that can be returned. Defaults to 0.</li>
+<li><strong>maxval</strong> &#8211; The maximum value that can be returned. Defaults to 2**31-1.</li>
+<li><strong>err_max</strong> &#8211; Whether to return the maximum or minimum upon error. If
+True, the maximum is returned, otherwise the minimum. Defaults to True.</li>
+<li><strong>val_type</strong> &#8211; The type to return. Can be float or int. Defaults to float.</li>
+<li><strong>err_val</strong> &#8211; The value to return upon error. If None, either the max or
+min value is used. Otherwise this is used. Defaults to None.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="filers.tools.hashfile">
+<code class="descclassname">filers.tools.</code><code class="descname">hashfile</code><span class="sig-paren">(</span><em>filename</em>, <em>hasher</em>, <em>blocksize=65536</em><span class="sig-paren">)</span><a class="headerlink" href="#filers.tools.hashfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a hash of the file.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">hashlib</span> <span class="k">import</span> <span class="n">sha256</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hashfile</span><span class="p">(</span><span class="s1">&#39;filepath&#39;</span><span class="p">,</span> <span class="n">sha256</span><span class="p">())</span>
+<span class="go">&#39;6Zxvdsfk327*&#39;</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> &#8211; The filename of the file to hash.</li>
+<li><strong>hasher</strong> &#8211; A hasher instance to use for computing the hash.</li>
+<li><strong>blocksize</strong> &#8211; Splits the file up into blocksizes and reads them piecemeal. Defaults
+to 65536.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="filers.tools.to_bool">
+<code class="descclassname">filers.tools.</code><code class="descname">to_bool</code><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="headerlink" href="#filers.tools.to_bool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes anything and converts it to a bool type.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="filers.tools.ConfigProperty">
+<code class="descclassname">filers.tools.</code><code class="descname">ConfigProperty</code><span class="sig-paren">(</span><em>val</em>, <em>name</em>, <em>val_type</em>, <em>section</em>, <em>config_name</em><span class="sig-paren">)</span><a class="headerlink" href="#filers.tools.ConfigProperty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the correct partialy-initialized
+<code class="xref py py-class docutils literal"><span class="pre">ConfigParserProperty</span></code> class accoridng to the
+input parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><cite>val</cite>: anything</dt>
+<dd><p class="first last">The default and error value to use for this property instance.</p>
+</dd>
+<dt><cite>name</cite>: str</dt>
+<dd><p class="first last">The config key to use for this property instance.</p>
+</dd>
+<dt><cite>val_type</cite>: callable</dt>
+<dd><p class="first last">The val_type callable to use for this property instance.</p>
+</dd>
+<dt><cite>section</cite>: str</dt>
+<dd><p class="first last">The config section to use for this property instance.</p>
+</dd>
+<dt><cite>config_name</cite>: str</dt>
+<dd><p class="first last">The config object name to use for this property instance.</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A <code class="xref py py-class docutils literal"><span class="pre">ConfigParserProperty</span></code> instance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Filers</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=matham&repo=filers&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#packaging">Packaging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../config.html">filers Config</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">The Filers API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="filers.html">Filers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">Filers App</a></li>
+<li class="toctree-l2"><a class="reference internal" href="record.html">Recorder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="process.html">Video Processing</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="misc_widgets.html">Widgets</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="api.html">The Filers API</a><ul>
+      <li>Previous: <a href="process.html" title="previous chapter">Video Processing</a></li>
+      <li>Next: <a href="misc_widgets.html" title="next chapter">Widgets</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/tools.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/api/tools.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/matham/filers" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>
