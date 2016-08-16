@@ -186,6 +186,13 @@ class Players(EventDispatcher):
         if show:
             self.show_settings(player)
 
+        items = ['-', ] + map(str, range(len(Players.players)))
+        n = len(items)
+        for player in Players.players:
+            group_play = player.player_view.knspace.group_play
+            if len(group_play.values) < n:
+                group_play.values = items
+
     @app_error
     def replace_player_cls(self, player, new_cls):
         if isinstance(player, self.source_names[new_cls]):
@@ -325,12 +332,36 @@ class FilersPlayer(object):
         self.read_viewer_settings()
         super(FilersPlayer, self).record()
 
+        group = self.player_view.knspace.group_play.text
+        if group == '-':
+            return
+
+        for player in Players.players:
+            player_group = player.player_view.knspace.group_play.text
+            btn = player.player_view.knspace.record
+            if player is not self and player_group == group \
+                    and player.record_state == 'none' \
+                    and btn.state == 'normal':
+                btn.trigger_action(0)
+
     def stop_recording(self, *largs):
         if super(FilersPlayer, self).stop_recording(*largs):
             self.player_view.knspace.record.state = 'normal'
             path_count = self.player_view.knspace.path_count
             if path_count.text:
                 path_count.text = str(int(path_count.text) + 1)
+
+            group = self.player_view.knspace.group_play.text
+            if group == '-':
+                return True
+
+            for player in Players.players:
+                player_group = player.player_view.knspace.group_play.text
+                btn = player.player_view.knspace.record
+                if player is not self and player_group == group \
+                        and player.record_state in ('recording', 'starting')\
+                        and btn.state == 'down':
+                    btn.trigger_action(0)
             return True
         return False
 

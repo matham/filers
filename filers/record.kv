@@ -71,6 +71,13 @@
                 source: 'play.png' if self.state == 'normal' else 'pause.png'
                 disabled: not root.player or not not root.player.config_active
                 on_release: root.player.play() if self.state == 'down' else root.player.stop()
+            KNSpinner:
+                knsname: 'group_play'
+                values: ['-']
+                text: '-'
+                padding_x: '15dp'
+                size_hint_x: None
+                width: self.texture_size[0]
         GridLayout:
             size_hint_y: None
             height: self.minimum_height
@@ -114,7 +121,9 @@
                 knsname: 'display'
                 do_rotation: False
                 auto_bring_to_front: False
-                size: self.parent.size
+                available_size: self.parent.size
+                size_hint: None, None
+                size: self.image_size
             GridLayout:
                 rows: 1
                 size_hint: None, None
@@ -643,6 +652,10 @@
                                 on_release: root.players.hide_settings(root.player)
                             Widget:
                                 size_hint_x: .1
-                    BufferImage:
-                        do_rotation: False
-                        knsname: 'display'
+                    RelativeLayout:
+                        BufferImage:
+                            do_rotation: False
+                            knsname: 'display'
+                            available_size: self.parent.size
+                            size_hint: None, None
+                            size: self.image_size
