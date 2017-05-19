@@ -101,7 +101,7 @@ class FilersApp(CPLComApp):
         text.text = ', '.join(sorted(set(files)))
 
 
-def _cleanup():
+def _cleanup(*largs):
     exit_players()
     # exit_converter()
 
